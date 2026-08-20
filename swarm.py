@@ -105,10 +105,27 @@ def read_skills(stack_hint):
     return "\n\n".join(out)
 
 
+def opencode_bin():
+    """Resolve the opencode executable (npm shim may be invisible to subprocess)."""
+    import shutil
+
+    exe = shutil.which("opencode")
+    if exe and not exe.lower().endswith((".cmd", ".ps1", ".bat")):
+        return exe
+    for cand in [
+        Path.home() / "AppData" / "Roaming" / "npm" / "node_modules" / "opencode-ai" / "bin" / "opencode.exe",
+        Path.home() / ".opencode" / "bin" / "opencode",
+        Path("/usr/local/bin/opencode"),
+        Path("/opt/homebrew/bin/opencode"),
+    ]:
+        if cand.exists():
+            return str(cand)
+    return exe or "opencode"
+
+
 def opencode_run(args):
     """Run the opencode CLI headless. Returns (returncode, stdout)."""
-    cmd = ["opencode", "run"]
-    cmd += args
+    cmd = [opencode_bin(), "run"] + args
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
         return r.returncode, r.stdout
@@ -155,13 +172,18 @@ def run_plan(conn, run_id, goal, depth):
     """Routing phase: orchestrator role builds the delegation plan (JSON)."""
     conn.execute("UPDATE runs SET status='planning' WHERE id=?", (run_id,))
     conn.commit()
+    available = []
+    for name in ["frontend", "backend", "ui", "theme", "seo", "db", "api"]:
+        if (roles_dir() / (name + ".md")).exists():
+            available.append(name)
     prompt = (
         read_role("orchestrator")
         + "\n\nGoal: " + goal
         + "\n\nMaximum depth: " + str(depth)
+        + "\n\nAvailable roles: " + ", ".join(available)
         + "\n\nReply with ONLY the JSON plan."
     )
-    rc, out = opencode_run(["--agent", "orchestrator", prompt])
+    rc, out = opencode_run([prompt])
     plan = _json_block(out) if rc == 0 else None
     agents = plan.get("agents", []) if isinstance(plan, dict) else []
     if not agents:
@@ -273,7 +295,7 @@ def execute_one(conn, run_id, a):
         + "\n\nWork in the current project directory. Do not touch files outside your scope. "
         + "Finish with your output contract."
     )
-    rc, out = opencode_run(["--agent", a["role"], prompt])
+    rc, out = opencode_run([prompt])
     result = (out or "")[:3000]
     conn.execute(
         "UPDATE run_agents SET result=?, status='tested', finished_at=? WHERE id=?",
@@ -295,10 +317,31 @@ def execute_one(conn, run_id, a):
         conn.commit()
         event(conn, run_id, "agent_pass", a["role"])
         print(f"  OK {a['role']}")
+        git_commit_agent(run_id, a["role"])
         return "ok"
     event(conn, run_id, "agent_fail", a["role"] + ": " + json.dumps(verdict)[:300])
     print(f"  FAIL {a['role']}: {verdict.get('failures', [])}")
     return "fail"
+
+
+def git_commit_agent(run_id, role):
+    """Commit the agent's work with a run+role tagged message."""
+    try:
+        r = subprocess.run(
+            ["git", "add", "-A"], capture_output=True, text=True, timeout=60
+        )
+        if r.returncode != 0:
+            return
+        r = subprocess.run(
+            ["git", "commit", "-m", f"swarm run #{run_id} {role}: verified by tester"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        if r.returncode == 0:
+            print(f"  committed: run #{run_id} {role}")
+    except (OSError, subprocess.TimeoutExpired):
+        pass
 
 
 def tester_check(conn, run_id, agent_id, role):
@@ -311,7 +354,7 @@ def tester_check(conn, run_id, agent_id, role):
         + "\n\nVerify the work just completed by role " + role
         + " in the current project. Run the real checks. Return ONLY the JSON verdict."
     )
-    rc, out = opencode_run(["--agent", "tester", prompt])
+    rc, out = opencode_run([prompt])
     if rc == 0:
         v = _json_block(out)
         if isinstance(v, dict) and v.get("verdict") in ("PASS", "FAIL"):

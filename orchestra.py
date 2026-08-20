@@ -633,7 +633,7 @@ code{background:#f4f4f2;border-radius:4px;padding:1px 5px;font-size:12.5px}
     <code>/done</code> — save session before closing a chat<br>
     <code>/remember fact</code> — store a lasting fact<br>
     <code>orchestra query "what did we decide about X"</code> — search the brain<br>
-    <code>orchestra serve</code> — this page · <code>doctor</code> · <code>commit</code> · <code>migrate</code> · <code>sync</code> · <code>upgrade</code></p>
+    <a href="/runs">Swarm runs board</a> · <code>orchestra serve</code> — this page · <code>doctor</code> · <code>commit</code> · <code>migrate</code> · <code>sync</code> · <code>upgrade</code></p>
     <p class="muted">Full manual: Orchestra repo, <code>docs/MANUAL.md</code>.</p>
   </section>
   <div class="grid">
@@ -891,11 +891,13 @@ def render_run_detail(brain, run_id):
         ".then(function(t){alert(t);});}</script>"
         % (run[0], esc(run[2]), esc(run[2]), esc(run[1][:120]), esc(run[3]), run[4], "".join(cards))
     )
-    return "<!doctype html><html><head><meta charset='utf-8'><title>Run #%d — Orchestra</title>" % run_id
-    + BOARD_CSS
-    + "</head><body><header><h1>Orchestra<span class='sub'>run board</span></h1></header><main>"
-    + body
-    + "</main></body></html>"
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'><title>Run #%d — Orchestra</title>" % run_id
+        + BOARD_CSS
+        + "</head><body><header><h1>Orchestra<span class='sub'>run board</span></h1></header><main>"
+        + body
+        + "</main></body></html>"
+    )
 
 
 def cmd_serve(port):
@@ -951,6 +953,8 @@ def main():
     if cmd == "doctor":
         sys.exit(cmd_doctor())
     if cmd == "status":
+        if args.run_id:
+            sys.exit(swarm_main(["status", str(args.run_id)]))
         cmd_status()
     elif cmd == "commit":
         cmd_commit()
@@ -974,10 +978,6 @@ def main():
         sys.exit(swarm_main(["run"] + list(args.goal) + (["--guided"] if args.guided else []) + ["--depth", str(args.depth)]))
     elif cmd == "resume":
         sys.exit(swarm_main(["resume", str(args.run_id)]))
-    elif cmd == "status":
-        if args.run_id:
-            sys.exit(swarm_main(["status", str(args.run_id)]))
-        cmd_status()
     elif cmd == "runs":
         sys.exit(swarm_main(["runs"]))
     else:
