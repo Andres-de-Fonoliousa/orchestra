@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "{{HOME}}/.config/opencode/memory/IDENTITY.md"
+  ],
+  "references": {
+    "memory": {
+      "path": "{{HOME}}/.config/opencode/memory",
+      "description": "Orchestra persistent memory: session journal, knowledge base, and handoff state. Use when recalling past sessions, decisions, or project history."
+    }
+  }
+}
