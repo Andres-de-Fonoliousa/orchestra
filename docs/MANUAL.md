@@ -1,4 +1,4 @@
-# Orchestra Manual (v1.0.0)
+# Orchestra Manual (v2.0.0)
 
 Orchestra is your memory layer for opencode. New chats don't remember — Orchestra does.
 This manual covers everything: the daily loop, every command, the CLI, the dashboard, and fixes.
@@ -69,12 +69,15 @@ python "$env:USERPROFILE\.config\opencode\orchestra.py" <command> [args]
 | Command | What it does |
 | --- | --- |
 | `doctor` | Checks install: config, memory files, commands, git repo. Exit code 0 = all good. |
+| `migrate` | Rebuilds the SQLite search index from journal + knowledge (auto-runs when stale) |
+| `query "<text>"` | FTS5 search of the brain — returns structured JSON (project, date, snippet) |
+| `sync` | Pull + commit + push the memory repo to its private remote |
 | `serve` | Visual dashboard at http://127.0.0.1:8714 (opens your browser) |
 | `commit` | Commit the brain to git (what `/done` calls) |
 | `status` | Lists every installed file |
 | `start` | Creates `.orchestra/handoff.md` in the current project |
 | `handoff [project]` | Deterministic text briefing (works even when the model quota is gone) |
-| `upgrade` | Shows current version + what v2.0 will bring |
+| `upgrade [repo]` | Backup the brain, pull new files from a repo checkout, rebuild the index, verify with doctor |
 | `install [repo]` | (Re)install/upgrade from a repo checkout; backups old config; never overwrites your data |
 
 Environment: `ORCHESTRA_HOME` overrides the brain location (testing); `ORCHESTRA_NO_BROWSER=1`
@@ -122,18 +125,31 @@ Each project keeps `.orchestra/handoff.md` (git-ignored in this repo's `.gitigno
 It's the live "where are we" note. `/handoff` and `/done` read/update it. Delete it and
 the next `/handoff` recreates a fresh one from `AGENTS.md` + your journal.
 
-## 7. Upgrading (v1.0.0 → v2.0)
+## 7. Upgrading (v1.0.0 → v2.0.0)
 
 1. Get the newer Orchestra checkout (this project updates in place).
-2. `python orchestra.py install <repo path>`
-3. `python orchestra.py doctor`
+2. `python orchestra.py upgrade <repo path>` — backs up the brain, updates files, rebuilds the search index, verifies with `doctor`.
+3. Or re-run `python orchestra.py install <repo path>`.
 
 Upgrades never overwrite your data (`IDENTITY.md`, `journal/`, `notes.md`, handoffs).
-Backups of the previous config appear as `opencode.jsonc.bak-*` / `opencode.json.bak-*`.
-Blueprint: see `docs/ROADMAP.md` (v2.0 = searchable SQLite memory, auto-journaling
-plugin, multi-machine sync).
+Backups of the previous config appear as `opencode.jsonc.bak-*` / `opencode.json.bak-*`
+and full-brain backups as `opencode-backup-<timestamp>`.
 
-## 8. Troubleshooting
+## 8. The auto-journal plugin
+
+v2.0 ships an opencode plugin (`.opencode/plugins/journal.ts`, installed to
+`~/.config/opencode/plugins/`) that writes a raw-digest journal entry whenever a
+session goes idle — user prompts and assistant replies, clipped. `/done` is now
+optional polish on top; a full day of work without `/done` still lands in the
+journal. Restart opencode after install to load the plugin.
+
+## 9. Multi-machine sync
+
+The brain is its own git repo with a private remote (`orchestra-memory`).
+`orchestra sync` pulls, commits, and pushes. Secrets never enter the brain —
+tokens stay in `opencode.json`, which lives outside the memory folder by design.
+
+## 10. Troubleshooting
 
 | Problem | Fix |
 | --- | --- |
@@ -145,7 +161,7 @@ plugin, multi-machine sync).
 | Handoff/journal look odd on Windows console | The dashboard or `handoff` command display UTF-8 fine; terminal needs UTF-8 (most modern ones do). |
 | Where did my old config go | `~/.config/opencode/opencode.jsonc.bak-<timestamp>`. |
 
-## 9. Reference — one-liners
+## 11. Reference — one-liners
 
 ```
 /handoff                       # brief me: stack, history, state, next steps
@@ -154,5 +170,8 @@ plugin, multi-machine sync).
 orchestra serve                # dashboard
 orchestra doctor               # health check
 orchestra handoff              # text briefing without any model
+orchestra query "X"            # search the brain (FTS5, JSON out)
+orchestra migrate              # rebuild the search index
+orchestra sync                 # memory repo -> private remote
 orchestra commit               # brain -> git now
 ```

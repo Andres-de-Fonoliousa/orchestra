@@ -15,18 +15,18 @@ Design rules carried forward:
 - User data (`IDENTITY.md`, `journal/`, `knowledge/`) is never overwritten by upgrades
 - Markdown first, code only where the model is unreliable (timestamps, git)
 
-## v1.1 — polish
+## v1.1 — polish (folded into v2.0.0)
 
-- [ ] `/done` also records a one-line status into the project `AGENTS.md` (optional)
-- [ ] `doctor` warns when `VERSION` in the brain is behind the repo
-- [ ] Git commit messages auto-tagged with project name
+- [x] `/done` also records a one-line status into the project `AGENTS.md`
+- [x] `doctor` warns when `VERSION` in the brain is behind the repo
+- [x] Git commit messages auto-tagged with project name
 
-## v2.0 — searchable brain + zero-effort journaling
+## v2.0 — searchable brain + zero-effort journaling (current)
 
-- [ ] **SQLite history layer**: structured memory (project, tags, decisions) with `orchestra.py query "what did we decide about X?"` — the model reads a JSON/SQL reply instead of grepping markdown. Migration is a build script from the existing `journal/` + `knowledge/`, keeping markdown as the source of truth (SQLite is a derived index).
-- [ ] **Auto-journaling plugin**: opencode TS plugin using `chat.message` + `experimental.session.compacting` hooks writes journal entries automatically — `/done` becomes optional. Lives at `.opencode/plugin/`, enabled by adding `plugin: ["<repo>/plugin.remote.ts"]` or copying the file in.
-- [ ] **Multi-machine sync**: the memory git repo gets a `git remote` (private repo rejection rules: never store keys — secrets stay in `opencode.json`, excluded from the brain by design).
-- [ ] `upgrade` subcommand automated: backup, migrate, verify, report.
+- [x] **SQLite history layer**: `orchestra.py query "what did we decide about X?"` returns a JSON reply (FTS5). `migrate` rebuilds the index from `journal/` + `knowledge/`; markdown stays the source of truth (SQLite is a derived index, gitignored).
+- [x] **Auto-journaling plugin**: opencode TS plugin at `.opencode/plugins/journal.ts` using `message.updated` + `session.idle` hooks writes raw-digest journal entries automatically — `/done` is now optional. Installed to `~/.config/opencode/plugins/`. (Note: `chat.message` no longer exists in opencode 1.18; `experimental.session.compacting` not needed for raw digests.)
+- [x] **Multi-machine sync**: memory repo pushed to a private GitHub remote (`orchestra-memory`); `orchestra sync` = pull --rebase + commit + push. Secrets stay in `opencode.json`, excluded from the brain by design.
+- [x] `upgrade` subcommand automated: backup, copy new files, migrate, verify, report.
 
 ## v3.0 — integration
 

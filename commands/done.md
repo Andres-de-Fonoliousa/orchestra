@@ -14,5 +14,6 @@ Persist this session's progress now.
    - Open questions: <unresolved items>
 
 3. Update `./.orchestra/handoff.md` (create it if missing) with current state and next steps, keeping it under 40 lines.
-4. Commit the memory: run `orchestra commit`. If `orchestra` is not available, fall back to `python "{{HOME}}/.config/opencode/orchestra.py" commit`. If both fail, say so explicitly.
-5. Report what was saved and where.
+4. Append a one-line status to the project's `AGENTS.md` (create it if missing): `- <YYYY-MM-DD> <project>: <one-line status>`. If `AGENTS.md` already has a `## Status` section, append the line there; otherwise add that section at the end.
+5. Commit the memory: run `orchestra commit`. If `orchestra` is not available, fall back to `python "{{HOME}}/.config/opencode/orchestra.py" commit`. If both fail, say so explicitly.
+6. Report what was saved and where.

@@ -78,4 +78,7 @@ For keys, you can also use env vars: `"apiKey": "{env:MY_KEY}"` keeps secrets ou
 
 ## Upgrades
 
-Version is tracked (`VERSION`). v2.0 blueprint: `docs/ROADMAP.md`. Re-run the installer from a newer checkout to upgrade — user data (`IDENTITY.md`, `journal/`, `notes.md`) is never overwritten.
+Version is tracked (`VERSION`). Re-run the installer from a newer checkout to
+upgrade — user data (`IDENTITY.md`, `journal/`, `notes.md`) is never overwritten.
+`orchestra upgrade <repo path>` automates it: backup, file update, index rebuild,
+doctor verification. v3.0 blueprint: `docs/ROADMAP.md`.
