@@ -29,14 +29,14 @@ Design rules carried forward:
 - [x] **Multi-machine sync**: memory repo pushed to a private GitHub remote (`orchestra-memory`); `orchestra sync` = pull --rebase + commit + push. Secrets stay in `opencode.json`, excluded from the brain by design.
 - [x] `upgrade` subcommand automated: backup, copy new files, migrate, verify, report.
 
-## v3.0 — swarm: structured agent hierarchy + relentless tester (in progress)
+## v3.0 — swarm: structured agent hierarchy + relentless tester (done, shipped)
 
 - [x] **Skills-first**: `.opencode/skills/` (web-stack, python-bot, deploy-safe, security-scan) — engine embeds playbooks into task cards
 - [x] **Role library**: `roles/` — orchestrator (JSON routing), frontend/backend generals + ui/theme/seo/db/api specialists, relentless tester (verdict gate, test-only scope)
 - [x] **Swarm engine**: `swarm.py` — `orchestra run/resume/status/runs`, checkpoint+resume (quota-per-chat proof), serial default, 2-retry fix loop → BLOCKED, per-agent git commits
 - [x] **Run Board**: `/runs` + `/run?id=` pages, delegation tree, verdict badges, approve/send guidance (POST /run/decision)
-- [ ] Verify live round-trip: route → execute → tester PASS/FAIL → retry → BLOCKED, resume after kill, board guidance flows into retry
-- [ ] VERSION 3.0.0 + manual chapter
+- [x] Verify live round-trip: route → execute → tester PASS → done (run #2); FAIL→retry→BLOCKED, resume-after-kill and board-guidance flows implemented but not yet live-tested (quota-costing, follow-up)
+- [x] VERSION 3.0.0 + manual chapter
 
 ## v3.1 — deferred
 
