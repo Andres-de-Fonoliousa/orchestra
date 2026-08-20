@@ -21,6 +21,9 @@ MEMORY_FILES = ["IDENTITY.md"]
 KNOWLEDGE_FILES = ["notes.md"]
 PLUGINS = ["journal.ts", "voice-report.js", "tts.ps1", "notify.ps1"]
 GIT_IGNORE = [".gitignore"]
+SWARM_EXTRA = ["swarm.py"]
+ROLES = ["orchestrator.md", "frontend.md", "backend.md", "ui.md", "theme.md", "seo.md", "db.md", "api.md", "tester.md"]
+SKILLS = ["web-stack.md", "python-bot.md", "deploy-safe.md", "security-scan.md"]
 
 INDEX_DB = "index.db"
 KNOW_LINE_RE = re.compile(r"^\*\*(\d{4}-\d{2}-\d{2})\s+([^*]+?)\*\*:\s*(.+)$")
@@ -31,6 +34,24 @@ TIME_SUFFIX_RE = re.compile(r"\s*[—–\-?:|]\s*\d{2}:\d{2}\s*(?:\(.*\))?$")
 def brain_dir():
     override = os.environ.get("ORCHESTRA_HOME")
     return Path(override) if override else Path.home() / ".config" / "opencode"
+
+
+def swarm_main(argv):
+    import importlib.util
+
+    script = Path(__file__).resolve().parent / "swarm.py"
+    if not script.exists():
+        print("swarm.py missing — reinstall Orchestra.")
+        return 1
+    spec = importlib.util.spec_from_file_location("orchestra_swarm", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    old = sys.argv
+    sys.argv = ["swarm"] + list(argv)
+    try:
+        return mod.main()
+    finally:
+        sys.argv = old
 
 
 def expand(text):
@@ -141,6 +162,8 @@ def cmd_install(source):
     (brain / "memory" / "journal").mkdir(parents=True, exist_ok=True)
     (brain / "memory" / "knowledge").mkdir(parents=True, exist_ok=True)
     (brain / "plugins").mkdir(parents=True, exist_ok=True)
+    (brain / "roles").mkdir(parents=True, exist_ok=True)
+    (brain / "skills").mkdir(parents=True, exist_ok=True)
 
     merge_config(brain, src / "opencode.global.json")
 
@@ -151,6 +174,21 @@ def cmd_install(source):
         plugin_src = src / ".opencode" / "plugins" / name
         if plugin_src.exists():
             shutil.copyfile(str(plugin_src), str(brain / "plugins" / name))
+
+    for name in SWARM_EXTRA:
+        if (src / name).exists():
+            shutil.copyfile(str(src / name), str(brain / name))
+
+    for name in ROLES:
+        if (src / "roles" / name).exists():
+            shutil.copyfile(str(src / "roles" / name), str(brain / "roles" / name))
+
+    for name in SKILLS:
+        if (src / ".opencode" / "skills" / name).exists():
+            shutil.copyfile(
+                str(src / ".opencode" / "skills" / name),
+                str(brain / "skills" / name),
+            )
 
     for name in MEMORY_FILES:
         copy_if_missing(src / "memory" / name, brain / "memory" / name)
@@ -678,10 +716,19 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
     brain = None
 
     def do_GET(self):
-        if self.path != "/":
+        if self.path == "/":
+            body = render_dashboard(self.brain).encode("utf-8")
+        elif self.path == "/runs":
+            body = render_runs_board(self.brain).encode("utf-8")
+        elif self.path.startswith("/run?"):
+            from urllib.parse import parse_qs, urlparse
+
+            q = parse_qs(urlparse(self.path).query)
+            run_id = int(q.get("id", ["0"])[0])
+            body = render_run_detail(self.brain, run_id).encode("utf-8")
+        else:
             self.send_error(404)
             return
-        body = render_dashboard(self.brain).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -693,6 +740,28 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             message = "memory: " + datetime.now().strftime("%Y-%m-%d %H:%M")
             ok = git_commit(self.brain / "memory", message)
             text = "Committed: " + message if ok else "Nothing to commit (or git unavailable)."
+        elif self.path == "/run/decision":
+            import json as _json
+
+            length = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(length).decode("utf-8")
+            try:
+                data = _json.loads(raw)
+                db = self.brain / "memory" / "runs.db"
+                conn = sqlite3.connect(str(db))
+                conn.execute(
+                    "UPDATE run_agents SET decision=? WHERE run_id=? AND id=?",
+                    (
+                        (data.get("note", "") or data.get("action", "")),
+                        int(data.get("run_id", 0)),
+                        int(data.get("agent_id", 0)),
+                    ),
+                )
+                conn.commit()
+                conn.close()
+                text = "Decision saved."
+            except Exception as e:
+                text = "Error: " + str(e)
         else:
             self.send_error(404)
             return
@@ -705,6 +774,128 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 
     def log_message(self, *args):
         pass
+
+
+BOARD_CSS = """
+<style>
+.board{margin:18px 0;font:13px/1.55 system-ui,"Segoe UI",sans-serif}
+.runrow{display:flex;gap:14px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:var(--card)}
+.runrow a{font-weight:600;color:var(--text);text-decoration:none}
+.runrow .goal{color:var(--muted)}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;color:#fff;background:#6b7280}
+.badge.planning{background:#8250df}.badge.running{background:#0969da}.badge.done{background:#1a7f37}
+.badge.partial{background:#d29922}.badge.failed{background:#b42318}.badge.blocked{background:#b42318}.badge.planned{background:#8250df}
+.tree{margin:14px 0}
+.acard{border:1px solid var(--line);border-radius:9px;padding:10px 14px;margin:8px 0 8px 0;background:var(--card);max-width:760px}
+.acard.d1{margin-left:0}.acard.d2{margin-left:34px}
+.acard h4{margin:0 0 4px;font-size:13.5px}
+.acard .task{color:var(--muted);margin:4px 0 8px}
+.acard .res{background:#f4f4f2;border-radius:6px;padding:8px;font-size:12px;white-space:pre-wrap;max-height:130px;overflow:auto;margin:6px 0}
+.dzone{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.dzone input{flex:1;min-width:200px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font:inherit}
+.dzone button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:6px 14px;cursor:pointer}
+.dzone button.alt{background:#6b7280}
+.sug{background:#fdf6e3;border:1px solid #e6d9a8;border-radius:6px;padding:6px 10px;font-size:12px;margin-top:6px}
+</style>
+"""
+
+
+def runs_board_data(brain):
+    db = brain / "memory" / "runs.db"
+    if not db.exists():
+        return []
+    conn = sqlite3.connect(str(db))
+    rows = conn.execute(
+        "SELECT id, goal, status, mode, created_at FROM runs ORDER BY id DESC LIMIT 12"
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def render_runs_board(brain):
+    esc = html.escape
+    rows = runs_board_data(brain)
+    items = []
+    for r in rows:
+        items.append(
+            '<div class="runrow"><a href="/run?id=%d">Run #%d</a>'
+            '<span class="badge %s">%s</span>'
+            '<span class="goal">%s</span><span class="muted">%s · %s</span></div>'
+            % (r[0], r[0], esc(r[2]), esc(r[2]), esc(r[1][:80]), esc(r[3]), esc(r[4]))
+        )
+    body = (
+        "<h1>Swarm runs</h1>"
+        + ("".join(items) if items else "<p class='muted'>No runs yet — <code>orchestra run &quot;goal&quot;</code></p>")
+        + '<p><a href="/">« dashboard</a></p>'
+    )
+    return "<!doctype html><html><head><meta charset='utf-8'><title>Runs — Orchestra</title>"
+    + BOARD_CSS
+    + "</head><body><header><h1>Orchestra<span class='sub'>swarm runs</span></h1></header><main>"
+    + body
+    + "</main></body></html>"
+
+
+def render_run_detail(brain, run_id):
+    esc = html.escape
+    db = brain / "memory" / "runs.db"
+    if not db.exists():
+        return "<html><body><p>No runs.db yet.</p></body></html>"
+    conn = sqlite3.connect(str(db))
+    run = conn.execute(
+        "SELECT id, goal, status, mode, depth, created_at FROM runs WHERE id=?", (run_id,)
+    ).fetchone()
+    if not run:
+        return "<html><body><p>Run not found.</p></body></html>"
+    agents = conn.execute(
+        "SELECT id, role, depth, task, status, verdict, retries, result, decision "
+        "FROM run_agents WHERE run_id=? ORDER BY id",
+        (run_id,),
+    ).fetchall()
+    conn.close()
+
+    cards = []
+    for a in agents:
+        state = esc(a[4] + (" · " + a[5] if a[5] else "") + (" · r" + str(a[6]) if a[6] else ""))
+        res = "<div class='res'>" + esc((a[7] or "")[:1200]) + "</div>" if a[7] else ""
+        dec = (
+            "<div class='sug'>Your decision: " + esc(a[8]) + "</div>"
+            if a[8]
+            else ""
+        )
+        controls = (
+            "<div class='dzone'><input id='note%d' placeholder='guidance for this agent…'><button onclick='decide(%d,%d)'>Approve / send</button></div>"
+            % (a[0], run_id, a[0])
+        )
+        cards.append(
+            "<div class='acard d%d'><h4>%s <span class='badge %s'>%s</span></h4>"
+            "<div class='task'>%s</div>%s%s%s</div>"
+            % (
+                min(a[2], 2),
+                esc(a[1]),
+                esc(a[4]),
+                state,
+                esc(a[3]),
+                res,
+                dec,
+                controls,
+            )
+        )
+    body = (
+        "<h1>Run #%d <span class='badge %s'>%s</span></h1>"
+        "<p class='muted'>%s · %s · depth %s</p>"
+        "<div class='tree'>%s</div>"
+        '<p><a href="/runs">« all runs</a> · <a href="/">dashboard</a></p>'
+        "<script>function decide(r,a){var n=document.getElementById('note'+a).value;"
+        "fetch('/run/decision',{method:'POST',headers:{'Content-Type':'application/json'},"
+        "body:JSON.stringify({run_id:r,agent_id:a,note:n})}).then(function(x){return x.text();})"
+        ".then(function(t){alert(t);});}</script>"
+        % (run[0], esc(run[2]), esc(run[2]), esc(run[1][:120]), esc(run[3]), run[4], "".join(cards))
+    )
+    return "<!doctype html><html><head><meta charset='utf-8'><title>Run #%d — Orchestra</title>" % run_id
+    + BOARD_CSS
+    + "</head><body><header><h1>Orchestra<span class='sub'>run board</span></h1></header><main>"
+    + body
+    + "</main></body></html>"
 
 
 def cmd_serve(port):
@@ -732,7 +923,7 @@ def main():
 
     sub.add_parser("install", help="copy repo into the global config and init memory git repo").add_argument("source", nargs="?", help="repo directory (default: this script's folder)")
     sub.add_parser("doctor", help="validate the installed setup")
-    sub.add_parser("status", help="list installed files")
+    sub.add_parser("status", help="list installed files, or swarm run status with a run id").add_argument("run_id", type=int, nargs="?")
     sub.add_parser("commit", help="git-commit the memory folder")
     sub.add_parser("migrate", help="rebuild the SQLite memory index from markdown")
     sub.add_parser("query", help="search the memory index (FTS5)").add_argument("text", help="search phrase, e.g. \"what did we decide about X\"")
@@ -743,6 +934,13 @@ def main():
     serve.add_argument("port", nargs="?", type=int, default=8714)
     serve.add_argument("--no-browser", action="store_true")
     sub.add_parser("upgrade", help="backup, migrate, verify, report").add_argument("source", nargs="?", help="repo directory to pull new files from (default: this script's folder)")
+
+    swarm = sub.add_parser("run", help="start a swarm run: hierarchical agents + relentless tester")
+    swarm.add_argument("goal", nargs="*", help="what to build")
+    swarm.add_argument("--guided", action="store_true", help="pause at every agent step")
+    swarm.add_argument("--depth", type=int, default=2, help="max delegation depth (1 or 2)")
+    sub.add_parser("resume", help="resume a swarm run after quota/stop").add_argument("run_id", type=int)
+    sub.add_parser("runs", help="list recent swarm runs")
 
     args = parser.parse_args()
     if args.home:
@@ -772,6 +970,16 @@ def main():
         cmd_serve(args.port)
     elif cmd == "upgrade":
         sys.exit(cmd_upgrade(args.source))
+    elif cmd == "run":
+        sys.exit(swarm_main(["run"] + list(args.goal) + (["--guided"] if args.guided else []) + ["--depth", str(args.depth)]))
+    elif cmd == "resume":
+        sys.exit(swarm_main(["resume", str(args.run_id)]))
+    elif cmd == "status":
+        if args.run_id:
+            sys.exit(swarm_main(["status", str(args.run_id)]))
+        cmd_status()
+    elif cmd == "runs":
+        sys.exit(swarm_main(["runs"]))
     else:
         parser.print_help()
 
