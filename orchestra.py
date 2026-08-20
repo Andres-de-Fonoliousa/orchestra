@@ -529,12 +529,12 @@ def cmd_sync():
         print("Create one first: gh repo create orchestra-memory --private --source <memory> --push")
         return 1
     print("Remote:", remote.stdout.strip())
+    git_commit(repo, "memory: sync " + datetime.now().strftime("%Y-%m-%d %H:%M"))
     pull = run_git(["pull", "--rebase", "-q"], repo)
     if pull and pull.returncode != 0:
         print("Pull failed (conflicts? run manually):", pull.stderr.strip() or pull.stdout.strip())
     elif pull:
         print("Pull: OK")
-    git_commit(repo, "memory: sync " + datetime.now().strftime("%Y-%m-%d %H:%M"))
     push = run_git(["push", "-q", "origin", "HEAD"], repo)
     if push and push.returncode == 0:
         print("Push: OK")
