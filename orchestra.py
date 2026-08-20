@@ -241,12 +241,20 @@ def index_db_path(brain):
 def parse_journal_file(path):
     text = path.read_text(encoding="utf-8-sig", errors="replace")
     date = path.stem
-    sections = re.split(r"(?m)^#{2,3}\s+", text)
+    parts = re.split(r"(?m)^(#{2,3})\s+", text)
     entries = []
-    for sec in sections[1:]:
-        lines = sec.splitlines()
+    for i in range(1, len(parts), 2):
+        hashes, content = parts[i], parts[i + 1]
+        lines = content.splitlines()
         title = lines[0].strip() if lines else "untitled"
         body = "\n".join(lines[1:]).strip()
+        if hashes == "###" and not TIME_SUFFIX_RE.search(title):
+            if entries:
+                entries[-1]["body"] += "\n\n" + content.strip()
+                entries[-1]["tags"] = TAG_RE.findall(
+                    entries[-1]["title"] + " " + entries[-1]["body"]
+                )
+            continue
         project = TIME_SUFFIX_RE.sub("", title) or title
         entries.append(
             {
