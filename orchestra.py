@@ -501,7 +501,8 @@ def cmd_upgrade(source):
                 str(brain / "plugins" / name),
             )
             new_files += 1
-    shutil.copyfile(str(Path(__file__).resolve()), str(brain / "orchestra.py"))
+    if (src / "orchestra.py").resolve() != Path(__file__).resolve():
+        shutil.copyfile(str(src / "orchestra.py"), str(brain / "orchestra.py"))
     shutil.copyfile(str(src / "VERSION"), str(brain / "VERSION"))
     print("Updated", new_files, "command/plugin files, orchestra.py, VERSION")
     print()
