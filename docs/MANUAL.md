@@ -1,4 +1,4 @@
-# Orchestra Manual (v2.0.0)
+# Orchestra Manual (v3.0.0)
 
 Orchestra is your memory layer for opencode. New chats don't remember — Orchestra does.
 This manual covers everything: the daily loop, every command, the CLI, the dashboard, and fixes.
@@ -170,7 +170,70 @@ tokens stay in `opencode.json`, which lives outside the memory folder by design.
 | Handoff/journal look odd on Windows console | The dashboard or `handoff` command display UTF-8 fine; terminal needs UTF-8 (most modern ones do). |
 | Where did my old config go | `~/.config/opencode/opencode.jsonc.bak-<timestamp>`. |
 
-## 11. Reference — one-liners
+## 12. v3 — the swarm (hierarchical coding agents)
+
+v3 adds a headless agent swarm to Orchestra. One command, and a team of specialized
+opencode sessions plans, builds, and tests a feature for you — with a relentless
+tester gate and a run board in the dashboard.
+
+### How it works
+
+```
+orchestra run "<goal>" --depth 1
+        |
+   [orchestrator] plans -> task cards (role + spec + skills)
+        |
+   [frontend] [backend] [ui] [theme] [seo] [db] [api]   <- one agent per card
+        |              (each runs as its own headless opencode session)
+        |
+   [tester]  verifies every agent's work
+        |      PASS -> git commit ("swarm run #N <role>: verified by tester")
+        |      FAIL -> 2 rework retries, then BLOCKED for your manual decision
+        v
+   run done -> status + board
+```
+
+### Commands
+
+| Command | What it does |
+| --- | --- |
+| `orchestra run "<goal>" [--depth 1\|2] [--guided]` | Start a swarm run (auto-continue by default) |
+| `orchestra status <id>` | Run state + per-agent cards (verdicts, timings, commit refs) |
+| `orchestra resume <id>` | Re-run an interrupted run from its saved checkpoint |
+| `orchestra runs` | List all runs |
+
+### The board
+
+`orchestra serve` → **Swarm runs board**: every run with status badges, and a
+detail page per run showing each agent card with its spec, result, verdict, and
+elapsed time. Blocked agents get a decision input — type a correction note,
+`POST /run/decision`, and the run resumes with your guidance.
+
+### Rules of the swarm
+
+- Serial execution by default (parallel only when you explicitly opt in).
+- Depth ≤ 2: at most two levels of decomposition, ≤ 8 agents per run.
+- Every run is checkpointed in `memory/runs.db` — kill it, resume it later.
+- Agent work is committed per-agent with the run number, so you can `git log`
+  the whole swarm's history and revert any single agent's change.
+- Roles live in `roles/` (orchestrator, frontend, backend, ui, theme, seo, db,
+  api, tester) and skills in `.opencode/skills/` (web-stack, python-bot,
+  deploy-safe, security-scan) — edit them and reinstall.
+
+### Costs & quotas
+
+Each agent = one headless opencode session = quota-consuming. A `--depth 1`
+run with 1 task uses ~2 sessions (agent + tester). Plan accordingly.
+
+## 13. Upgrading to v3
+
+1. Get the newer Orchestra checkout (this project updates in place).
+2. `python orchestra.py install <repo path>` (or `upgrade`).
+3. Restart opencode to load new plugins/skills.
+
+Upgrades never overwrite your data. Your brain, runs, and journals survive.
+
+## 14. Reference — one-liners
 
 ```
 /handoff                       # brief me: stack, history, state, next steps
@@ -183,4 +246,7 @@ orchestra query "X"            # search the brain (FTS5, JSON out)
 orchestra migrate              # rebuild the search index
 orchestra sync                 # memory repo -> private remote
 orchestra commit               # brain -> git now
+orchestra run "goal" --depth 1 # swarm: plan, build, test
+orchestra status 3             # run 3 details
+orchestra resume 3             # continue a checkpointed run
 ```
