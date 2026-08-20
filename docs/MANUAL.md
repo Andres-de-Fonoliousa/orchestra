@@ -143,6 +143,15 @@ session goes idle — user prompts and assistant replies, clipped. `/done` is no
 optional polish on top; a full day of work without `/done` still lands in the
 journal. Restart opencode after install to load the plugin.
 
+## 8b. The voice-report plugin
+
+Also ships in `.opencode/plugins/` (from the audio feature): `voice-report.js`
+speaks the closing `Report:` line of every assistant reply through Windows TTS
+(`tts.ps1`, System.Speech — works offline), shows a rounded toast (`notify.ps1`),
+and maps agent roles to distinct voices/rates/sounds. It is additive — it shares
+the `session.idle` hook with the journal plugin without interference; hooks run
+in sequence.
+
 ## 9. Multi-machine sync
 
 The brain is its own git repo with a private remote (`orchestra-memory`).

@@ -19,13 +19,13 @@ ORCHESTRA_VERSION = "2.0.0"
 COMMANDS = ["handoff.md", "done.md", "remember.md"]
 MEMORY_FILES = ["IDENTITY.md"]
 KNOWLEDGE_FILES = ["notes.md"]
-PLUGINS = ["journal.ts"]
+PLUGINS = ["journal.ts", "voice-report.js", "tts.ps1", "notify.ps1"]
 GIT_IGNORE = [".gitignore"]
 
 INDEX_DB = "index.db"
 KNOW_LINE_RE = re.compile(r"^\*\*(\d{4}-\d{2}-\d{2})\s+([^*]+?)\*\*:\s*(.+)$")
 TAG_RE = re.compile(r"#([\w-]+)")
-TIME_SUFFIX_RE = re.compile(r"\s*[—–-]\s*\d{2}:\d{2}\s*(?:\(.*\))?$")
+TIME_SUFFIX_RE = re.compile(r"\s*[—–\-?:|]\s*\d{2}:\d{2}\s*(?:\(.*\))?$")
 
 
 def brain_dir():
@@ -239,9 +239,9 @@ def index_db_path(brain):
 
 
 def parse_journal_file(path):
-    text = path.read_text(encoding="utf-8-sig")
+    text = path.read_text(encoding="utf-8-sig", errors="replace")
     date = path.stem
-    sections = re.split(r"(?m)^##\s+", text)
+    sections = re.split(r"(?m)^#{2,3}\s+", text)
     entries = []
     for sec in sections[1:]:
         lines = sec.splitlines()
@@ -263,7 +263,7 @@ def parse_journal_file(path):
 
 
 def parse_knowledge_file(path):
-    text = path.read_text(encoding="utf-8-sig")
+    text = path.read_text(encoding="utf-8-sig", errors="replace")
     entries = []
     for line in text.splitlines():
         line = line.strip()

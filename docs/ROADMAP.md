@@ -25,6 +25,7 @@ Design rules carried forward:
 
 - [x] **SQLite history layer**: `orchestra.py query "what did we decide about X?"` returns a JSON reply (FTS5). `migrate` rebuilds the index from `journal/` + `knowledge/`; markdown stays the source of truth (SQLite is a derived index, gitignored).
 - [x] **Auto-journaling plugin**: opencode TS plugin at `.opencode/plugins/journal.ts` using `message.updated` + `session.idle` hooks writes raw-digest journal entries automatically — `/done` is now optional. Installed to `~/.config/opencode/plugins/`. (Note: `chat.message` no longer exists in opencode 1.18; `experimental.session.compacting` not needed for raw digests.)
+- [x] **Voice-report plugin** (bonus, external agent): `voice-report.js` + `tts.ps1` + `notify.ps1` speak the `Report:` line via offline Windows TTS; installed alongside journal.ts, no hook conflicts.
 - [x] **Multi-machine sync**: memory repo pushed to a private GitHub remote (`orchestra-memory`); `orchestra sync` = pull --rebase + commit + push. Secrets stay in `opencode.json`, excluded from the brain by design.
 - [x] `upgrade` subcommand automated: backup, copy new files, migrate, verify, report.
 
