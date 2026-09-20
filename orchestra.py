@@ -15,7 +15,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-ORCHESTRA_VERSION = "2.0.0"
+ORCHESTRA_VERSION = "2.1.0"
 COMMANDS = ["handoff.md", "done.md", "remember.md"]
 MEMORY_FILES = ["IDENTITY.md"]
 KNOWLEDGE_FILES = ["notes.md"]
@@ -238,13 +238,21 @@ def doctor_results(brain):
 def cmd_doctor():
     brain = brain_dir()
     results, repo_ok = doctor_results(brain)
+    
+    # Environment Checks
+    import shutil
+    print("Checking dependencies...")
+    print(f"[OK] Python version: {sys.version.split()[0]}")
+    print(("[OK] " if shutil.which("git") else "[MISSING] ") + "git")
+    print(("[OK] " if shutil.which("bun") else "[NOTE] ") + "bun (required for TS plugin builds)")
+
     ok = True
     for label, path, present in results:
         ok = ok and present
         print(("[OK] " if present else "[MISSING] ") + label + " -> " + str(path))
     print(("[OK] " if repo_ok else "[NOTE] ") + "memory git repo (git not found or not a repo)")
     ok = ok and repo_ok
-
+    
     version_file = brain / "VERSION"
     installed = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else "?"
     if installed != ORCHESTRA_VERSION:
@@ -596,52 +604,53 @@ DASHBOARD_TEMPLATE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Orchestra — v@VERSION@</title>
-<style>
-:root{--bg:#f7f7f5;--card:#ffffff;--line:#e4e4e0;--text:#1f2328;--muted:#6b7280;--ok:#1a7f37;--bad:#b42318;--accent:#0969da}
-*{box-sizing:border-box}
-body{margin:0;font:14px/1.6 system-ui,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-header{padding:14px 26px;border-bottom:1px solid var(--line);background:var(--card);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
-header h1{font-size:17px;margin:0}
-header .sub{color:var(--muted);font-weight:400;margin-left:8px}
-header .tip{display:flex;gap:12px;align-items:center}
-main{max-width:980px;margin:0 auto;padding:22px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-@media(max-width:760px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:18px}
-.card h2{font-size:12px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-pre{background:#f4f4f2;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12.5px;line-height:1.5;margin:0;white-space:pre-wrap;word-break:break-word}
-ul.checks{list-style:none;margin:0;padding:0}
-ul.checks li{padding:4px 0;border-bottom:1px dashed var(--line)}
-ul.checks .muted{display:block;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-li.ok{color:var(--ok)}li.bad{color:var(--bad)}
-h3{font-size:14px;margin:14px 0 6px}
-button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
-button:hover{filter:brightness(1.1)}
-a{color:var(--accent)}
-code{background:#f4f4f2;border-radius:4px;padding:1px 5px;font-size:12.5px}
-</style>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<header>
-  <h1>Orchestra<span class="sub">v@VERSION@ — memory dashboard</span></h1>
-  <span class="tip"><span id="msg"></span><button onclick="commit()">Commit memory</button></span>
-</header>
-<main>
-  <section class="card"><h2>Health</h2>@STATUS@</section>
-  <section class="card"><h2>Quick manual</h2>
-    <p><code>/handoff</code> — load context in a new chat (journal + handoff + knowledge)<br>
-    <code>/done</code> — save session before closing a chat<br>
-    <code>/remember fact</code> — store a lasting fact<br>
-    <code>orchestra query "what did we decide about X"</code> — search the brain<br>
-    <a href="/runs">Swarm runs board</a> · <code>orchestra serve</code> — this page · <code>doctor</code> · <code>commit</code> · <code>migrate</code> · <code>sync</code> · <code>upgrade</code></p>
-    <p class="muted">Full manual: Orchestra repo, <code>docs/MANUAL.md</code>.</p>
-  </section>
-  <div class="grid">
-    <section class="card"><h2>Identity — memory/IDENTITY.md</h2>@IDENTITY@</section>
-    <section class="card"><h2>Knowledge — memory/knowledge/notes.md</h2>@NOTES@</section>
+<body class="bg-gray-50 text-gray-900 font-sans">
+<header class="bg-white border-b border-gray-200 py-4 px-6 flex items-center justify-between">
+  <h1 class="text-xl font-bold">Orchestra<span class="text-gray-500 font-normal ml-2">v@VERSION@ — memory dashboard</span></h1>
+  <div class="flex items-center gap-4">
+    <span id="msg" class="text-sm"></span>
+    <button onclick="commit()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Commit memory</button>
   </div>
-  <section class="card"><h2>Journal — memory/journal/ (newest first)</h2>@JOURNAL@</section>
-  <section class="card"><h2>Handoff — .orchestra/handoff.md of this folder</h2>@HANDOFF@</section>
+</header>
+<main class="max-w-6xl mx-auto p-6">
+  <section class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+    <h2 class="text-xs uppercase tracking-widest text-gray-500 mb-4">Health</h2>
+    @STATUS@
+  </section>
+  <section class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+    <h2 class="text-xs uppercase tracking-widest text-gray-500 mb-4">Quick manual</h2>
+    <p class="text-sm"><code>/handoff</code> — load context in a new chat<br>
+    <code>/done</code> — save session<br>
+    <code>/remember fact</code> — store fact<br>
+    <code>orchestra serve</code> — this page</p>
+  </section>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <section class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+        <h2 class="text-xs uppercase tracking-widest text-gray-500 mb-4">Identity</h2>
+        @IDENTITY@
+    </section>
+    <section class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+        <h2 class="text-xs uppercase tracking-widest text-gray-500 mb-4">Knowledge</h2>
+        @NOTES@
+    </section>
+  </div>
+  <section class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+    <h2 class="text-xs uppercase tracking-widest text-gray-500 mb-4">Journal</h2>
+    @JOURNAL@
+  </section>
+  <section class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+    <h2 class="text-xs uppercase tracking-widest text-gray-500 mb-4">Handoff</h2>
+    @HANDOFF@
+  </section>
+  <section class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+    <h2 class="text-xs uppercase tracking-widest text-gray-500 mb-4">Memory API (index.db)</h2>
+    <select id="project-select" onchange="loadMemory()" class="mb-4 border rounded p-2 text-sm">
+        <option value="">All Projects</option>
+    </select>
+    <div id="api-data" class="text-sm">Loading memory entries...</div>
+  </section>
 </main>
 <script>
 async function commit(){
@@ -649,6 +658,38 @@ async function commit(){
   var r=await fetch('/commit',{method:'POST'});
   m.textContent=await r.text();
 }
+
+async function loadProjects() {
+    const res = await fetch('http://127.0.0.1:8715/api/projects');
+    const projects = await res.json();
+    const select = document.getElementById('project-select');
+    projects.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p;
+        option.textContent = p;
+        select.appendChild(option);
+    });
+}
+
+async function loadMemory(){
+  const project = document.getElementById('project-select').value;
+  const url = project ? `http://127.0.0.1:8715/api/memory?project=${project}` : 'http://127.0.0.1:8715/api/memory';
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const container = document.getElementById('api-data');
+    container.innerHTML = data.length ? data.map(entry => `
+      <div class="mb-4 border-b pb-2">
+        <strong>${entry.project} - ${entry.title}</strong> <span class="text-gray-500">(${entry.date})</span>
+        <p class="text-gray-700 text-sm mt-1">${entry.body.substring(0, 100)}...</p>
+      </div>
+    `).join('') : '<p class="text-gray-500">No entries found for this project.</p>';
+  } catch(e) {
+    document.getElementById('api-data').innerHTML = 'Error loading API data: ' + e.message;
+  }
+}
+loadProjects();
+loadMemory();
 </script>
 </body>
 </html>
@@ -717,20 +758,31 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/":
-            body = render_dashboard(self.brain).encode("utf-8")
+            # Reference dashboard file relative to orchestra.py location
+            dashboard_path = Path(__file__).resolve().parent / "dashboard" / "index.html"
+            if dashboard_path.exists():
+                body = dashboard_path.read_text(encoding="utf-8").encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+            else:
+                body = render_dashboard(self.brain).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
         elif self.path == "/runs":
             body = render_runs_board(self.brain).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
         elif self.path.startswith("/run?"):
             from urllib.parse import parse_qs, urlparse
-
             q = parse_qs(urlparse(self.path).query)
             run_id = int(q.get("id", ["0"])[0])
             body = render_run_detail(self.brain, run_id).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
         else:
             self.send_error(404)
             return
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
+        
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)

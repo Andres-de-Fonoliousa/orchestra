@@ -38,7 +38,13 @@ Design rules carried forward:
 - [x] Verify live round-trip: route → execute → tester PASS → done (run #2); FAIL→retry→BLOCKED, resume-after-kill and board-guidance flows implemented but not yet live-tested (quota-costing, follow-up)
 - [x] VERSION 3.0.0 + manual chapter
 
-## v3.1 — deferred
+## v4.0 — Open-Source UI/UX Polish
+
+- [ ] Enterprise-grade (Stripe/GitHub style) visualizer: Enterprise layout, Tailwind shell, Sidebar structure.
+- [ ] Directory-based Navigation: Tabbed view for per-directory memory analysis.
+- [ ] Core Control Page: Global state, Identity management, Fact CRUD.
+- [ ] GitHub Profile Integration [Future]
+- [ ] Landing/Documentation Page [Future]
 
 ## Definition of done for v2.0
 

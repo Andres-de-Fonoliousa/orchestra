@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orchestra Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+    <div id="app" class="flex h-screen">
+        <aside class="w-64 bg-slate-900 text-white flex flex-col">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold tracking-tight">Orchestra</h1>
+            </div>
+            <nav class="flex-1 p-4 space-y-6">
+                <div>
+                    <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-2">Control</h4>
+                    <ul class="space-y-1">
+                        <li><button @click="currentTab = 'projects'" :class="{'bg-slate-800': currentTab === 'projects'}" class="w-full text-left p-2 rounded hover:bg-slate-800">Projects</button></li>
+                        <li><button @click="currentTab = 'core'" :class="{'bg-slate-800': currentTab === 'core'}" class="w-full text-left p-2 rounded hover:bg-slate-800">Core Control</button></li>
+                        <li><button @click="currentTab = 'monitor'" :class="{'bg-slate-800': currentTab === 'monitor'}" class="w-full text-left p-2 rounded hover:bg-slate-800">Live Monitor</button></li>
+                        <li><button @click="currentTab = 'agents'" :class="{'bg-slate-800': currentTab === 'agents'}" class="w-full text-left p-2 rounded hover:bg-slate-800">Agents Control</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-2">Projects</h4>
+                    <ul class="space-y-1 max-h-64 overflow-y-auto">
+                        <li><button @click="currentProject = null" :class="{'text-blue-400': currentProject === null}" class="w-full text-left p-2 rounded hover:bg-slate-800">Global View</button></li>
+                        <li v-for="project in projects" :key="project">
+                            <button @click="currentProject = project" :class="{'text-blue-400': currentProject === project}" class="w-full text-left p-2 rounded hover:bg-slate-800">{{ project }}</button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+        
+        <main class="flex-1 p-8 overflow-y-auto bg-white">
+            <header class="mb-8 flex justify-between items-center border-b pb-4">
+                <h2 class="text-2xl font-semibold text-slate-900">{{ currentTab === 'projects' ? (currentProject || 'Global Memory') : (currentTab === 'core' ? 'Core Control' : 'Live Monitor') }}</h2>
+            </header>
+            
+            <div v-if="currentTab === 'projects'" class="space-y-6">
+                <!-- Project Dashboard (Non-Global View) -->
+                <div v-if="currentProject" class="space-y-6">
+                    <!-- Project Stats Header -->
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <div class="flex items-center gap-3">
+                            <span :class="{
+                                'bg-emerald-50 text-emerald-700 border-emerald-200': currentMetadata.status === 'Stable',
+                                'bg-blue-50 text-blue-700 border-blue-200': currentMetadata.status === 'WIP',
+                                'bg-amber-50 text-amber-700 border-amber-200': currentMetadata.status === 'Undeployed' || currentMetadata.status === 'Blocked',
+                            }" class="px-2.5 py-0.5 text-xs font-semibold rounded-full border">
+                                {{ currentMetadata.status || 'WIP' }}
+                            </span>
+                        </div>
+                        <button @click="isEditingMetadata = !isEditingMetadata" class="text-sm font-medium text-blue-600 hover:text-blue-700">
+                            {{ isEditingMetadata ? 'Cancel Edit' : 'Edit Roadmap' }}
+                        </button>
+                    </div>
+
+                    <!-- Metadata Grid View / Edit Form -->
+                    <div v-if="!isEditingMetadata" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-6 rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Description</h4>
+                            <p class="text-slate-700 leading-relaxed">{{ currentMetadata.description }}</p>
+                        </div>
+                        <div class="p-6 rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tech Stack</h4>
+                            <p class="text-slate-700 leading-relaxed">{{ currentMetadata.tech_stack }}</p>
+                        </div>
+                        <div class="p-6 rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current State</h4>
+                            <p class="text-slate-700 leading-relaxed">{{ currentMetadata.current_state }}</p>
+                        </div>
+                        <div class="p-6 rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Next Steps</h4>
+                            <p class="text-slate-700 leading-relaxed">{{ currentMetadata.next_steps }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Metadata Edit Mode -->
+                    <div v-else class="space-y-4 p-6 rounded-lg border border-slate-200 bg-slate-50/50">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Status</label>
+                                <select v-model="currentMetadata.status" class="w-full p-2 border rounded text-sm bg-white">
+                                    <option value="WIP">WIP</option>
+                                    <option value="Stable">Stable</option>
+                                    <option value="Blocked">Blocked</option>
+                                    <option value="Undeployed">Undeployed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Tech Stack</label>
+                                <input v-model="currentMetadata.tech_stack" class="w-full p-2 border rounded text-sm bg-white" placeholder="e.g. Vue 3, Laravel 13">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Description</label>
+                            <textarea v-model="currentMetadata.description" class="w-full p-2 border rounded text-sm bg-white h-20" placeholder="Describe the project..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Current State</label>
+                            <textarea v-model="currentMetadata.current_state" class="w-full p-2 border rounded text-sm bg-white h-20" placeholder="What is the current milestone?"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Next Steps</label>
+                            <textarea v-model="currentMetadata.next_steps" class="w-full p-2 border rounded text-sm bg-white h-20" placeholder="What is the plan for the next sprint?"></textarea>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button @click="isEditingMetadata = false" class="px-4 py-2 border rounded text-sm hover:bg-slate-100">Cancel</button>
+                            <button @click="saveMetadata" class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">Save Roadmap</button>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Activity Log Switch -->
+                    <div class="border-t pt-6">
+                        <button @click="showRawLog = !showRawLog" class="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-700">
+                            <span>{{ showRawLog ? 'Hide' : 'Show' }} Raw Activity Log ({{ memory.length }} events)</span>
+                            <svg class="w-4 h-4 transform transition-transform" :class="{'rotate-180': showRawLog}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Global View Header (if no project is selected) -->
+                <div v-else class="p-6 rounded-lg border border-slate-200 bg-slate-50/50 shadow-sm mb-4">
+                    <p class="text-sm text-slate-500 italic">Viewing compiled real-time timeline across all project environments.</p>
+                </div>
+
+                <!-- Timeline / Activity Logs Section -->
+                <div v-if="!currentProject || showRawLog" class="space-y-4">
+                    <div v-if="memory.length === 0" class="text-slate-500 italic">No memory entries found for this context.</div>
+                    <div v-for="entry in memory" :key="entry.date + entry.title" class="p-6 rounded-lg border border-slate-200 shadow-sm hover:border-blue-300 transition-all bg-white">
+                        <h3 class="font-semibold text-lg text-slate-900">{{ entry.title }}</h3>
+                        <div class="flex gap-2 items-center mt-1">
+                            <span class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{{ entry.project }}</span>
+                            <span class="text-xs text-slate-400">{{ entry.date }}</span>
+                        </div>
+                        <p class="mt-3 text-slate-600 leading-relaxed whitespace-pre-line">{{ entry.body }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentTab === 'core'" class="space-y-6">
+                <div class="p-6 rounded-lg border border-slate-200">
+                    <h3 class="font-semibold text-lg mb-4">Identity Configuration</h3>
+                    <textarea v-model="identity" class="w-full h-48 p-4 border rounded font-mono text-sm"></textarea>
+                    <button @click="saveIdentity" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Save IDENTITY.md</button>
+                </div>
+                <div class="p-6 rounded-lg border border-slate-200">
+                    <h3 class="font-semibold text-lg mb-4">Knowledge Base</h3>
+                    <textarea v-model="knowledge" class="w-full h-48 p-4 border rounded font-mono text-sm"></textarea>
+                    <button @click="saveKnowledge" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Save notes.md</button>
+                </div>
+            </div>
+
+            <div v-if="currentTab === 'monitor'" class="space-y-6">
+                <div v-for="run in runs" :key="run.id" class="p-4 rounded-lg border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-semibold text-sm">Run #{{ run.id }} - {{ run.goal }}</h4>
+                        <span :class="{'bg-green-100 text-green-800': run.status === 'done', 'bg-blue-100 text-blue-800': run.status === 'running'}" class="px-2 py-1 rounded text-xs">{{ run.status }}</span>
+                    </div>
+                    <div v-for="agent in run.agents" :key="agent.role" class="text-xs text-slate-600 mt-1">
+                        {{ agent.role }}: {{ agent.status }}
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentTab === 'agents'" class="flex gap-6 h-full">
+                <div class="w-1/3 p-4 border rounded">
+                    <h3 class="font-semibold text-lg mb-2">Agent Roles</h3>
+                    <p class="text-xs text-slate-500 mb-4">Select an agent to customize their responsibilities, instructions, and target stack.</p>
+                    <ul>
+                        <li v-for="role in agents" :key="role">
+                            <button @click="loadAgent(role)" class="w-full text-left p-2 rounded hover:bg-slate-100">{{ role }}</button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="w-2/3 p-4 border rounded flex flex-col">
+                    <h3 class="font-semibold text-lg mb-2">{{ selectedAgent || 'Select an Agent' }}</h3>
+                    <p class="text-xs text-slate-500 mb-4" v-if="selectedAgent">Modify the prompt and core logic for this role below. Changes are persisted immediately upon saving.</p>
+                    <textarea v-if="selectedAgent" v-model="agentContent" class="w-full flex-1 min-h-[300px] p-4 border rounded font-mono text-sm mb-4"></textarea>
+                    <button v-if="selectedAgent" @click="saveAgent" class="self-end bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Save Configuration</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    projects: [],
+                    memory: [],
+                    currentProject: null,
+                    currentTab: 'projects',
+                    identity: '',
+                    knowledge: '',
+                    runs: [],
+                    agents: [],
+                    selectedAgent: null,
+                    agentContent: '',
+                    currentMetadata: { description: '', tech_stack: '', current_state: '', next_steps: '', status: 'WIP' },
+                    isEditingMetadata: false,
+                    showRawLog: false
+                }
+            },
+            watch: {
+                currentProject(proj) { 
+                    this.loadMemory(); 
+                    if (proj) this.loadMetadata(proj);
+                    this.isEditingMetadata = false;
+                    this.showRawLog = false;
+                },
+                currentTab(tab) { 
+                    if (tab === 'monitor') this.loadRuns();
+                    if (tab === 'agents') this.loadAgents();
+                }
+            },
+            methods: {
+                async loadProjects() {
+                    const res = await fetch('http://127.0.0.1:8715/api/projects');
+                    this.projects = await res.json();
+                },
+                async loadMemory() {
+                    const url = this.currentProject ? `http://127.0.0.1:8715/api/memory?project=${this.currentProject}` : 'http://127.0.0.1:8715/api/memory';
+                    const res = await fetch(url);
+                    this.memory = await res.json();
+                },
+                async loadMetadata(proj) {
+                    const res = await fetch(`http://127.0.0.1:8715/api/projects/metadata/${proj}`);
+                    this.currentMetadata = await res.json();
+                },
+                async saveMetadata() {
+                    await fetch(`http://127.0.0.1:8715/api/projects/metadata/${this.currentProject}`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(this.currentMetadata)
+                    });
+                    this.isEditingMetadata = false;
+                    alert('Project roadmap updated successfully!');
+                },
+                async loadIdentity() {
+                    const res = await fetch('http://127.0.0.1:8715/api/identity');
+                    const data = await res.json();
+                    this.identity = data.content;
+                },
+                async saveIdentity() {
+                    await fetch('http://127.0.0.1:8715/api/config/identity', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({content: this.identity})
+                    });
+                    alert('Identity saved!');
+                },
+                async loadKnowledge() {
+                    const res = await fetch('http://127.0.0.1:8715/api/knowledge');
+                    const data = await res.json();
+                    this.knowledge = data.content;
+                },
+                async saveKnowledge() {
+                    await fetch('http://127.0.0.1:8715/api/config/knowledge', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({content: this.knowledge})
+                    });
+                    alert('Knowledge saved!');
+                },
+                async loadRuns() {
+                    const res = await fetch('http://127.0.0.1:8715/api/runs');
+                    const runs = await res.json();
+                    for(let run of runs) {
+                        const res2 = await fetch(`http://127.0.0.1:8715/api/runs/${run.id}`);
+                        run.agents = await res2.json();
+                    }
+                    this.runs = runs;
+                },
+                async loadAgents() {
+                    const res = await fetch('http://127.0.0.1:8715/api/agents');
+                    this.agents = await res.json();
+                },
+                async loadAgent(role) {
+                    this.selectedAgent = role;
+                    const res = await fetch(`http://127.0.0.1:8715/api/agents/${role}`);
+                    const data = await res.json();
+                    this.agentContent = data.content;
+                },
+                async saveAgent() {
+                    await fetch(`http://127.0.0.1:8715/api/agents/${this.selectedAgent}`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({content: this.agentContent})
+                    });
+                    alert('Agent configuration saved!');
+                }
+            },
+            mounted() {
+                this.loadProjects();
+                this.loadMemory();
+                this.loadIdentity();
+                this.loadKnowledge();
+                this.loadRuns();
+                setInterval(() => { if (this.currentTab === 'monitor') this.loadRuns(); }, 2000);
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>

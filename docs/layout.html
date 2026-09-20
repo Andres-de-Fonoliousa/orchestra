@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orchestra Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        code { font-family: 'JetBrains Mono', monospace; }
+        .active-link { color: #60a5fa; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="w-64 h-screen sticky top-0 border-r border-slate-800 p-8 space-y-8">
+            <h2 class="font-bold text-white text-lg tracking-tight">ORCHESTRA DOCS</h2>
+            <nav class="space-y-4 text-sm text-slate-400">
+                <a href="#introduction" class="block hover:text-white">1. Introduction</a>
+                <a href="#daily-loop" class="block hover:text-white">2. Daily Loop</a>
+                <a href="#cli" class="block hover:text-white">3. The CLI</a>
+                <a href="#dashboard" class="block hover:text-white">4. Dashboard</a>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 p-16 max-w-4xl">
+            <div id="content" class="prose prose-invert prose-slate prose-lg">
+                <!-- Content injected here -->
+            </div>
+        </main>
+    </div>
+</body>
+</html>

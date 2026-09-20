@@ -1,84 +1,46 @@
 # Orchestra
 
-Opencode session orchestration. One brain, every chat. No token repasting, no context re-explaining.
+**The persistent memory and orchestration layer for AI development.**
 
-Read the full usage manual first: **`docs/MANUAL.md`**. Try the visual dashboard after install:
-`orchestra serve` (opens a local page with your memory, health, and a commit button — run it in a NEW terminal).
+Orchestra enables seamless context continuity across ephemeral chat sessions. Stop re-pasting project requirements and start building. With git-backed immutable memory and autonomous agent orchestration, your AI assistant finally gets a brain that lasts.
 
-## The problem it solves
+---
 
-Your free opencode limit is per chat. New chat = fresh quota, but also = amnesia. Orchestra makes every new chat pick up exactly where the last one left off.
+### The "Wow" Features
 
-## How it works
+1.  **Contextual Continuity:** Never lose your place. Every new chat session automatically inherits your project's identity, knowledge, and active handoff state.
+2.  **Git-Backed Immutable Brain:** Your memory is a verifiable Git repository. Query, search, and audit everything the AI has ever learned about your project.
+3.  **Autonomous Agent Swarms:** Go beyond single-prompt engineering. Orchestra orchestrates complex hierarchies of specialized agents (Backend, Frontend, Security, DevOps, Tester) to deliver production-grade features.
 
-Three layers:
+---
 
-| Layer | What | Where |
-| --- | --- | --- |
-| Keyring | tokens, model, config set once, inherited by every chat | `~/.config/opencode/opencode.json` |
-| Brain | permanent memory every session reads | `~/.config/opencode/memory/` |
-| Handshake | 3 commands that bridge chats | global commands `/handoff` `/done` `/remember` |
+### Why Orchestra?
 
-## Install (2 minutes)
+AI development tools often suffer from "chat amnesia"—every fresh session requires a fresh prompt. Orchestra solves this by implementing a structured memory bridge that syncs across every chat you start, ensuring the AI behaves like a consistent, long-term team member.
 
-```
-cd <this project folder>
+### Quickstart
+
+```bash
+# Install Orchestra
 powershell -ExecutionPolicy Bypass -File install.ps1
+
+# Start the visual dashboard
+orchestra serve
 ```
 
-Or manually: `python orchestra.py install <repo path>` then `python orchestra.py doctor`.
+*Then, just run `/handoff` in your favorite AI chat.*
 
-Then **quit and restart opencode** (config loads only at startup), and fill in
-`~/.config/opencode/memory/IDENTITY.md` once — it is loaded into every session.
+---
 
-## Daily use
+### Architecture
 
-| When | What |
-| --- | --- |
-| Hitting the limit / rotating chats | New chat, run `/handoff`, paste-back the briefing is automatic |
-| Ending a session | `/done` — journals the session, updates handoff, git-commits the brain |
-| A fact worth never forgetting | `/remember <fact>` |
-| Deterministic fallback (no quota) | `orchestra handoff` (in a new terminal) |
-| Visual dashboard | `orchestra serve` |
+| Core | Responsibility |
+| :--- | :--- |
+| **Brain** | Immutable, searchable Git-backed knowledge repository (`~/.config/opencode/memory/`). |
+| **Handoff** | Project-specific live state managed through local `.orchestra/` configurations. |
+| **Orchestrator** | Hierarchical agent management for complex, multi-step engineering tasks. |
 
-## Adding a model or token
+[Documentation](docs/MANUAL.md) · [Roadmap](docs/ROADMAP.md)
 
-Edit `~/.config/opencode/opencode.json` — one file, one time. Example:
-
-```json
-{
-  "model": "provider/model-id",
-  "provider": { "provider-name": { "options": { "apiKey": "sk-..." } } }
-}
-```
-
-For keys, you can also use env vars: `"apiKey": "{env:MY_KEY}"` keeps secrets out of the file.
-
-## Layout
-
-```
-~/.config/opencode/
-  opencode.json          # Keyring (merged, your config preserved)
-  orchestra.py           # helper: doctor / commit / handoff / upgrade
-  VERSION
-  commands/              # handoff.md, done.md, remember.md
-  memory/                # THE BRAIN — its own git repo
-    IDENTITY.md          # who you are (read into every session)
-    journal/YYYY-MM-DD.md  # session diary
-    knowledge/notes.md   # lasting facts
-<your-project>/.orchestra/handoff.md   # live per-project state
-```
-
-## Troubleshooting
-
-- **Nothing changed after install** → restart opencode; config is not hot-reloaded.
-- **Broken config, opencode won't start** → `OPENCODE_DISABLE_PROJECT_CONFIG=1` skips project config; fix and restart.
-- **Memory edit went wrong** → the brain is a git repo: `git -C ~/.config/opencode/memory log` to undo.
-- **Backup of your old config** → look for `opencode.jsonc.bak-*` in `~/.config/opencode/`.
-
-## Upgrades
-
-Version is tracked (`VERSION`). Re-run the installer from a newer checkout to
-upgrade — user data (`IDENTITY.md`, `journal/`, `notes.md`) is never overwritten.
-`orchestra upgrade <repo path>` automates it: backup, file update, index rebuild,
-doctor verification. v3.0 blueprint: `docs/ROADMAP.md`.
+---
+*Built for the opencode ecosystem.*
