@@ -1,46 +1,91 @@
+<div align="center">
+
 # Orchestra
 
-**The persistent memory and orchestration layer for AI development.**
+<p align="center">
+  <strong>The Persistent Memory & Multi-Agent Orchestration Layer for AI Development</strong>
+</p>
+<p align="center">
+  <a href="https://docs-ebon-xi.vercel.app" target="_blank"><b>Landing Page</b></a> · 
+  <a href="https://docs-ebon-xi.vercel.app/manual.html" target="_blank"><b>Official Manual</b></a> · 
+  <a href="#quickstart"><b>Quickstart</b></a>
+</p>
 
-Orchestra enables seamless context continuity across ephemeral chat sessions. Stop re-pasting project requirements and start building. With git-backed immutable memory and autonomous agent orchestration, your AI assistant finally gets a brain that lasts.
+  <img src="https://img.shields.io/badge/version-3.0.0-blue.svg?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/ecosystem-opencode-purple.svg?style=flat-square" alt="Ecosystem">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/storage-Git%20%2B%20SQLite%20FTS5-orange.svg?style=flat-square" alt="Storage">
+</div>
 
 ---
 
-### The "Wow" Features
+## 🛑 The Pain: Ephemeral AI Amnesia
 
-1.  **Contextual Continuity:** Never lose your place. Every new chat session automatically inherits your project's identity, knowledge, and active handoff state.
-2.  **Git-Backed Immutable Brain:** Your memory is a verifiable Git repository. Query, search, and audit everything the AI has ever learned about your project.
-3.  **Autonomous Agent Swarms:** Go beyond single-prompt engineering. Orchestra orchestrates complex hierarchies of specialized agents (Backend, Frontend, Security, DevOps, Tester) to deliver production-grade features.
+Every developer building with AI tools faces the same exhausting routine:
+1. **Chat Amnesia:** Your session quota expires or you open a fresh chat. Poof—all project context, architecture decisions, and gotchas vanish.
+2. **Re-Explaining Overhead:** You spend the first 15 minutes of every chat re-pasting project requirements, tech stack rules, and API endpoints.
+3. **Single-Prompt Limitations:** Working on complex features requires manual copy-pasting between separate agent outputs without shared state or testing gates.
+
+## ✨ The Solution: Orchestra
+
+**Orchestra** eliminates chat amnesia by establishing a Git-backed state infrastructure and autonomous agent swarm engine for `opencode`. It gives your AI assistants a persistent, version-controlled brain that lasts across sessions, machines, and quota resets.
 
 ---
 
-### Why Orchestra?
+## 🎯 Features Bound to Developer Pain
 
-AI development tools often suffer from "chat amnesia"—every fresh session requires a fresh prompt. Orchestra solves this by implementing a structured memory bridge that syncs across every chat you start, ensuring the AI behaves like a consistent, long-term team member.
+| Developer Pain Point | Orchestra Solution | How It Works |
+| :--- | :--- | :--- |
+| **Lost context on new chats** | 🧠 **Contextual Continuity** | `/handoff` automatically loads project handoffs, the last 3 days of journal entries, and the knowledge base. |
+| **Forgetting architectural choices** | 📝 **Immutable Git Brain** | `/remember <fact>` logs decisions into <code>notes.md</code>. Every memory update is git-tracked and fully auditable (`git revert`). |
+| **Manual chat session logging** | ⚡ **Auto-Journaling Plugin** | Background TypeScript plugins record raw digests during session idle time. `/done` becomes optional polish. |
+| **Managing complex coding tasks** | 🤖 **Multi-Agent Swarm (v3)** | `orchestra run "<goal>"` spawns a hierarchical team of specialized agents (Backend, Frontend, Tester) with automated testing gates. |
+| **Fragmented developer tooling** | 📊 **Visual Dashboard** | `orchestra serve` launches a zero-dependency web interface (`:8714`) to audit health, memories, and swarm run boards. |
 
-### Quickstart
+---
 
-```bash
-# Install Orchestra
+## 🚀 Quickstart
+
+### Installation
+Clone the repository and run the setup script to configure your global environment and user PATH:
+
+```powershell
+git clone https://github.com/Andres-de-Fonoliousa/orchestra.git
+cd orchestra
 powershell -ExecutionPolicy Bypass -File install.ps1
-
-# Start the visual dashboard
-orchestra serve
 ```
 
-*Then, just run `/handoff` in your favorite AI chat.*
+### The Daily Workflow
+| Moment | Command | What happens |
+| :--- | :--- | :--- |
+| **Starting work** | `/handoff` | Briefs the AI on project state, recent history, and next steps. |
+| **Saving a gotcha** | `/remember <fact>` | Permanently logs architectural choices into the knowledge base. |
+| **Ending work** | `/done` | Journals session progress, updates handoff notes, and git-commits the brain. |
 
 ---
 
-### Architecture
+## 🛠️ The CLI Reference
 
-| Core | Responsibility |
-| :--- | :--- |
-| **Brain** | Immutable, searchable Git-backed knowledge repository (`~/.config/opencode/memory/`). |
-| **Handoff** | Project-specific live state managed through local `.orchestra/` configurations. |
-| **Orchestrator** | Hierarchical agent management for complex, multi-step engineering tasks. |
+```powershell
+orchestra <command> [args]
+```
 
-[Documentation](docs/MANUAL.md) · [Roadmap](docs/ROADMAP.md)
+*   `orchestra doctor` — Validates system configuration, memory integrity, and git repo status.
+*   `orchestra query "<text>"` — FTS5 natural language search across your entire project history.
+*   `orchestra sync` — Pulls, commits, and pushes your memory repo to a private remote.
+*   `orchestra serve` — Launches the local visual dashboard interface.
+*   `orchestra run "<goal>"` — Initiates a headless multi-agent swarm run.
 
 ---
-*Built for the opencode ecosystem.*
+
+## 📚 Documentation & Resources
+
+- **[Official Manual (v3.0.0)](https://docs-ebon-xi.vercel.app/manual.html)** — Comprehensive guide covering CLI, architecture, plugins, and troubleshooting.
+- **[Roadmap](docs/ROADMAP.md)** — Architectural evolution from v1 to v3 swarms.
+- **[Contributing Guide](CONTRIBUTING.md)** — Guidelines for building custom plugins and skills.
+
+---
+
+<p align="center">
+  <i>Built for the opencode ecosystem. Give your agents a brain that lasts.</i>
+</p>
