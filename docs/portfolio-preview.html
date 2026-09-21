@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Preview — Orchestra Showcase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: '#0A2540',
+                        ink: '#0D2B4D',
+                        indigo: '#635BFF',
+                        'indigo-deep': '#4A43DB',
+                        lime: '#81B81A',
+                        mist: '#F6F9FC',
+                        fog: '#EEF2F7',
+                        line: '#E6EBF1',
+                        primary: '#0A2540',
+                        secondary: '#425466',
+                        muted: '#697386',
+                        codebg: '#0B1B33',
+                    },
+                    fontFamily: {
+                        display: ['"Space Grotesk"', '"Inter"', 'system-ui', 'sans-serif'],
+                        body: ['"Inter"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+                    },
+                    boxShadow: {
+                        card: '0 1px 2px rgba(10,37,64,0.04), 0 8px 24px rgba(10,37,64,0.06)',
+                        lift: '0 4px 12px rgba(10,37,64,0.08), 0 20px 48px rgba(10,37,64,0.15)',
+                        btn: '0 1px 2px rgba(10,37,64,0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::selection { background: #635bff; color: #ffffff; }
+        .code-kw { color: #c792ea; }
+        .code-var { color: #82aaff; }
+        .code-str { color: #c3e88d; }
+        .code-fn { color: #89ddff; }
+        .code-com { color: #5e7ba8; font-style: italic; }
+        .spotlight {
+            position: absolute; left: 50%; top: 0; width: 720px; max-width: 90vw; height: 340px; transform: translateX(-50%); pointer-events: none;
+            background: radial-gradient(38% 42% at 34% 40%, rgba(99, 91, 255, 0.09), transparent 70%),
+                        radial-gradient(34% 38% at 66% 52%, rgba(129, 184, 26, 0.07), transparent 72%),
+                        radial-gradient(30% 34% at 50% 22%, rgba(41, 151, 255, 0.06), transparent 70%);
+        }
+        .bento { background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 249, 252, 0.85)), #ffffff; }
+        .link-underline { position: relative; }
+        .link-underline::after {
+            content: ''; position: absolute; left: 0; bottom: -2px; height: 1px; width: 100%; background: currentColor;
+            transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease;
+        }
+        .link-underline:hover::after { transform: scaleX(1); }
+    </style>
+</head>
+<body class="bg-mist text-primary font-body antialiased py-24 px-4 sm:px-6">
+
+    <div class="relative mx-auto max-w-[1100px]">
+        <div class="spotlight" aria-hidden="true"></div>
+        <div class="text-center mb-12 relative">
+            <p class="mb-4 font-mono text-xs uppercase tracking-[0.25em] text-indigo">Featured Open Source System</p>
+            <h2 class="font-display text-3xl font-bold leading-tight tracking-tight text-primary sm:text-4xl md:text-5xl">
+                Complete systems,<br class="hidden sm:block"> built end-to-end.
+            </h2>
+        </div>
+
+        <!-- Project Preview Card (Orchestra) -->
+        <div class="bg-white rounded-3xl border border-line p-8 sm:p-12 grid items-center gap-10 md:grid-cols-2 md:gap-12 relative overflow-hidden">
+            <div>
+                <p class="font-mono text-xs uppercase tracking-[0.2em] text-indigo">Python • Git-Backed Memory • Multi-Agent Swarms</p>
+                <h3 class="font-display mt-3 text-2xl font-bold leading-snug tracking-tight text-primary md:text-3xl">Orchestra — AI Session Memory & Swarms</h3>
+                <p class="mt-4 leading-relaxed text-secondary">
+                    The persistent memory and orchestration layer for AI development. Bridges ephemeral chat sessions into a unified, version-controlled brain with SQLite FTS5 search and autonomous coding swarms.
+                </p>
+                <ul class="mt-6 space-y-2.5 font-mono text-sm text-secondary">
+                    <li class="flex items-center gap-2">
+                        <span class="shrink-0 text-lime font-bold">✓</span> Immutable Git-backed memory layer: <code class="bg-mist px-1.5 py-0.5 rounded text-xs text-indigo">~/.config/opencode/memory</code>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="shrink-0 text-lime font-bold">✓</span> SQLite FTS5 full-text search indexing & auto-journaling plugin
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="shrink-0 text-lime font-bold">✓</span> Hierarchical multi-agent coding swarms via <code class="bg-mist px-1.5 py-0.5 rounded text-xs text-indigo">orchestra run</code>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="shrink-0 text-lime font-bold">✓</span> Stripe-grade visual dashboard via <code class="bg-mist px-1.5 py-0.5 rounded text-xs text-indigo">orchestra serve</code>
+                    </li>
+                </ul>
+                <div class="mt-8 flex flex-wrap items-center gap-4">
+                    <span class="inline-block rounded-full border border-indigo/30 bg-indigo/10 px-3 py-1 font-mono text-xs text-indigo font-semibold">
+                        OPEN SOURCE RELEASE
+                    </span>
+                    <a href="https://github.com/Andres-de-Fonoliousa/agent_orchistration" target="_blank" rel="noopener" class="link-underline inline-flex items-center gap-1.5 font-mono text-sm text-indigo font-medium">
+                        Browse the repository →
+                    </a>
+                </div>
+            </div>
+
+            <!-- Visual Mockup Container with Curvy SVG Connectivity & Bottom Recovery Box -->
+            <div class="relative pt-6 pe-4 pb-6">
+                <!-- Floating Curvy SVG Connectivity Badge (Top-Left / Outside Terminal) -->
+                <div class="absolute -top-3 -start-6 z-10 bg-white border border-line p-3 rounded-2xl shadow-card flex items-center gap-3">
+                    <svg width="140" height="24" viewBox="0 0 140 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Curvy connector paths representing Brain -> Swarm -> Opencode -> User -->
+                        <path d="M 12 12 Q 28 4, 44 12 T 76 12 T 108 12" stroke="#635BFF" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
+                        <!-- Nodes -->
+                        <circle cx="12" cy="12" r="3.5" fill="#635BFF" title="Brain"/>
+                        <circle cx="44" cy="12" r="3.5" fill="#4a43db" title="Swarm"/>
+                        <circle cx="76" cy="12" r="3.5" fill="#635BFF" title="Opencode"/>
+                        <circle cx="108" cy="12" r="4.5" fill="#81B81A" title="User" class="animate-pulse"/>
+                    </svg>
+                    <span class="font-mono text-[10px] font-semibold text-indigo">sync</span>
+                </div>
+
+                <!-- Floating Swarm Topology Badge (Top-Right / Outside Terminal) -->
+                <div class="absolute -top-2 -end-2 z-10 bg-white border border-line px-3 py-1.5 rounded-xl shadow-card flex items-center gap-2 font-mono text-[11px] text-secondary">
+                    <span class="text-indigo font-bold">λ</span>
+                    <span>swarm.py</span>
+                </div>
+
+                <div class="absolute -inset-6 rounded-3xl bg-gradient-to-br from-indigo/20 via-indigo/5 to-transparent blur-2xl" aria-hidden="true"></div>
+                
+                <!-- Unchanged, Pristine Terminal -->
+                <div class="bento overflow-hidden rounded-2xl border border-line shadow-lift relative">
+                    <div class="flex items-center gap-2 border-b border-line bg-fog px-4 py-2.5">
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]"></span>
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#febc2e]"></span>
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#28c840]"></span>
+                        <span class="ms-2 flex-1 truncate rounded bg-white px-3 py-0.5 text-center font-mono text-[11px] text-muted">
+                            orchestra-memory / swarm runtime
+                        </span>
+                    </div>
+                    <div class="bg-codebg p-5 font-mono text-xs text-slate-200 space-y-3 shadow-inner">
+                        <p class="code-com">// Initialize headless swarm run</p>
+                        <p><span class="code-kw">orchestra</span> <span class="code-fn">run</span> <span class="code-str">"Build multi-tenant SaaS billing"</span> --depth <span class="code-var">1</span></p>
+                        <div class="border-t border-slate-800/80 pt-3 space-y-1.5 text-[11px]">
+                            <p class="text-purple-400">[orchestrator] Decomposing task tree...</p>
+                            <p class="text-indigo-300">[backend-dev] Implementing idempotent Stripe webhook...</p>
+                            <p class="text-lime font-semibold">[tester-sentinel] All 26 regression tests passed. PASS.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Restored Bottom-Right Instant Context Recovery Box -->
+                <div class="absolute -bottom-6 end-2 w-72 rounded-xl border border-line bg-codebg p-4 font-mono text-xs text-slate-200 shadow-lift sm:-end-4">
+                    <p class="code-com"># Instant context recovery</p>
+                    <p class="text-blue-400">/handoff</p>
+                    <p class="text-slate-400 text-[11px]">→ Loaded handoff.md & 3-day journal in 0.4s.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

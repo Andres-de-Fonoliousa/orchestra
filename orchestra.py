@@ -15,7 +15,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-ORCHESTRA_VERSION = "2.1.0"
+ORCHESTRA_VERSION = "3.0.0"
 COMMANDS = ["handoff.md", "done.md", "remember.md"]
 MEMORY_FILES = ["IDENTITY.md"]
 KNOWLEDGE_FILES = ["notes.md"]
@@ -199,6 +199,11 @@ def cmd_install(source):
 
     shutil.copyfile(str(Path(__file__).resolve()), str(brain / "orchestra.py"))
     shutil.copyfile(str(src / "VERSION"), str(brain / "VERSION"))
+    
+    dashboard_src = src / "dashboard" / "index.html"
+    if dashboard_src.exists():
+        (brain / "dashboard").mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(str(dashboard_src), str(brain / "dashboard" / "index.html"))
     if sys.platform == "win32" and (src / "orchestra.cmd").exists():
         shutil.copyfile(str(src / "orchestra.cmd"), str(brain / "orchestra.cmd"))
 
@@ -407,9 +412,40 @@ def build_index(brain):
             )
             n += 1
         conn.commit()
+        
+        # Autonomous Project Metadata Sync from Markdown source of truth
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS project_metadata ("
+            "project TEXT PRIMARY KEY,"
+            "description TEXT NOT NULL DEFAULT '',"
+            "tech_stack TEXT NOT NULL DEFAULT '',"
+            "current_state TEXT NOT NULL DEFAULT '',"
+            "next_steps TEXT NOT NULL DEFAULT '',"
+            "status TEXT NOT NULL DEFAULT 'WIP')"
+        )
+        entries_list = collect_entries(brain)
+        project_latest = {}
+        for e in entries_list:
+            proj = e["project"]
+            if proj and proj not in project_latest:
+                project_latest[proj] = e["body"]
+        
+        for proj, body in project_latest.items():
+            cur = conn.execute("SELECT project FROM project_metadata WHERE project=?", (proj,))
+            if not cur.fetchone():
+                conn.execute(
+                    "INSERT INTO project_metadata (project, description, current_state, next_steps, status) VALUES (?, ?, ?, ?, ?)",
+                    (proj, f"Auto-indexed project {proj} from Orchestra journal.", body[:150], "Continue active development sprint.", "WIP")
+                )
+            else:
+                conn.execute(
+                    "UPDATE project_metadata SET current_state = ? WHERE project = ? AND (current_state = '' OR current_state LIKE 'WIP%')",
+                    (body[:150], proj)
+                )
+        conn.commit()
     finally:
         conn.close()
-    return n
+    return len(entries_list)
 
 
 def index_stale(brain):
@@ -558,7 +594,13 @@ def cmd_upgrade(source):
     if (src / "orchestra.py").resolve() != Path(__file__).resolve():
         shutil.copyfile(str(src / "orchestra.py"), str(brain / "orchestra.py"))
     shutil.copyfile(str(src / "VERSION"), str(brain / "VERSION"))
-    print("Updated", new_files, "command/plugin files, orchestra.py, VERSION")
+    
+    dashboard_src = src / "dashboard" / "index.html"
+    if dashboard_src.exists():
+        (brain / "dashboard").mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(str(dashboard_src), str(brain / "dashboard" / "index.html"))
+    
+    print("Updated", new_files, "command/plugin files, orchestra.py, VERSION, dashboard")
     print()
 
     n = build_index(brain)
