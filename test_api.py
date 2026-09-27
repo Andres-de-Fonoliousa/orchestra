@@ -55,5 +55,17 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(data.get("status"), "testing")
         self.assertEqual(data.get("checkpoint"), "step1")
 
+    def test_run_guidance(self):
+        from api import get_runs_db
+        conn = get_runs_db()
+        conn.execute("INSERT OR REPLACE INTO runs (id, goal, status, created_at, updated_at) VALUES (1000, 'Test Guidance Goal', 'running', '2026-09-27 00:00:00', '2026-09-27 00:00:00')")
+        conn.commit()
+        conn.close()
+
+        res = self.app.post('/api/runs/1000/guidance', json={"guidance": "Focus on unit tests"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data.get("status"), "success")
+
 if __name__ == '__main__':
     unittest.main()

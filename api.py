@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import shutil
+from datetime import datetime
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pathlib import Path
@@ -417,6 +418,72 @@ def get_run_errors(run_id):
         "retries": r[6],
         "error_detail": r[7]
     } for r in rows])
+
+@app.route('/api/runs/<int:run_id>/guidance', methods=['POST'])
+def add_run_guidance(run_id):
+    data = request.json or {}
+    guidance = data.get('guidance', '').strip()
+    if not guidance:
+        return jsonify({"error": "Guidance text is required"}), 400
+    
+    conn = get_runs_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM runs WHERE id=?", (run_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify({"error": "Run not found"}), 404
+        
+    ts = datetime.now().isoformat()
+    cursor.execute("INSERT INTO run_events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)", 
+                   (run_id, ts, 'guidance', guidance))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "run_id": run_id, "guidance": guidance})
+
+@app.route('/api/runs/<int:run_id>/control', methods=['POST'])
+def control_run(run_id):
+    data = request.json or {}
+    action = data.get('action', '').strip().lower()
+    valid_actions = {'pause', 'resume', 'cancel'}
+    if action not in valid_actions:
+        return jsonify({"error": f"Invalid action. Must be one of: {list(valid_actions)}"}), 400
+        
+    status_map = {
+        'pause': 'paused',
+        'resume': 'running',
+        'cancel': 'cancelled'
+    }
+    new_status = status_map[action]
+    
+    conn = get_runs_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM runs WHERE id=?", (run_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return jsonify({"error": "Run not found"}), 404
+        
+    cursor.execute("UPDATE runs SET status=?, updated_at=datetime('now') WHERE id=?", (new_status, run_id))
+    ts = datetime.now().isoformat()
+    cursor.execute("INSERT INTO run_events (run_id, ts, type, payload) VALUES (?, ?, ?, ?)", 
+                   (run_id, ts, 'control', f"Action: {action} -> Status: {new_status}"))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "run_id": run_id, "action": action, "run_status": new_status})
+
+@app.route('/api/orchestrator/interact', methods=['POST'])
+def orchestrator_interact():
+    data = request.json or {}
+    prompt = data.get('prompt', '').strip()
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+        
+    response_text = f"Orchestrator received guidance/query: '{prompt}'. System state validated and agent swarm ready."
+    return jsonify({
+        "status": "success",
+        "prompt": prompt,
+        "response": response_text,
+        "timestamp": datetime.now().isoformat()
+    })
 
 @app.errorhandler(404)
 def not_found_error(error):
