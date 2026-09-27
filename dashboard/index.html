@@ -318,27 +318,107 @@
                 </div>
 
                 <!-- LIVE MONITOR TAB -->
-                <div v-if="currentTab === 'monitor'" class="max-w-4xl mx-auto space-y-4">
-                    <div v-if="runs.length === 0" :class="isDarkMode ? 'bg-[#121214] border-[#27272a] text-zinc-500' : 'bg-white border-[#E6EBF1] text-slate-400'" class="p-10 text-center rounded-xl border italic text-xs font-mono">No agent swarm runs recorded.</div>
-                    <div v-for="run in runs" :key="run.id" :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-5 rounded-xl border space-y-3 transition-colors duration-200">
-                        <div :class="isDarkMode ? 'border-zinc-800' : 'border-slate-100'" class="flex justify-between items-center border-b pb-2.5">
+                <div v-if="currentTab === 'monitor'" class="max-w-4xl mx-auto space-y-6">
+                    <!-- Launch New Swarm Run Card -->
+                    <div :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-6 rounded-xl border space-y-4 transition-colors duration-200">
+                        <div class="flex items-center justify-between border-b pb-3" :class="isDarkMode ? 'border-zinc-800' : 'border-slate-100'">
                             <div class="flex items-center gap-2">
-                                <span :class="isDarkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-slate-100 border-slate-200 text-slate-600'" class="text-xs font-mono font-bold px-2 py-0.5 rounded border">#{{ run.id }}</span>
-                                <h4 :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="font-bold text-xs font-mono">{{ run.goal }}</h4>
+                                <i data-lucide="play-circle" class="w-4 h-4 text-indigo"></i>
+                                <h3 :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xs font-bold uppercase tracking-wider font-mono">Launch New Swarm Run</h3>
                             </div>
-                            <span :class="{
-                                'bg-emerald/10 text-emerald border-emerald/30': run.status === 'done', 
-                                'bg-indigo/10 text-indigo border-indigo/30': run.status === 'running',
-                                'bg-rose-500/10 text-rose-400 border-rose-500/30': run.status === 'failed'
-                            }" class="px-2.5 py-0.5 rounded text-[10px] font-bold border font-mono uppercase tracking-wider">
-                                {{ run.status }}
-                            </span>
+                            <span class="text-[10px] font-mono text-indigo bg-indigo/10 border border-indigo/20 px-2 py-0.5 rounded">v3 Swarm Engine</span>
                         </div>
-                        <div :class="isDarkMode ? 'bg-[#050505] border-zinc-800' : 'bg-slate-50 border-slate-200'" class="p-3.5 rounded-lg border space-y-2">
-                            <div v-for="agent in run.agents" :key="agent.role" :class="isDarkMode ? 'border-zinc-800/60' : 'border-slate-200'" class="flex items-center justify-between text-xs py-1 border-b last:border-0">
-                                <span :class="isDarkMode ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-200 text-slate-900'" class="font-mono font-semibold px-2 py-0.5 rounded border">{{ agent.role }}</span>
-                                <span :class="isDarkMode ? 'text-zinc-400' : 'text-slate-600'" class="truncate max-w-sm">{{ agent.task }}</span>
-                                <span :class="{'text-emerald font-bold': agent.status === 'done', 'text-indigo font-bold': agent.status === 'running'}" class="text-[10px] uppercase tracking-wider font-mono">{{ agent.status }}</span>
+                        <div class="space-y-3">
+                            <div>
+                                <label :class="isDarkMode ? 'text-zinc-400' : 'text-slate-600'" class="block text-[11px] font-bold uppercase tracking-wider mb-1.5 font-mono">Goal / Feature Request</label>
+                                <input v-model="newGoal" @keyup.enter="launchSwarmRun" :class="isDarkMode ? 'bg-[#050505] border-zinc-800 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'" class="w-full p-3 border rounded-lg text-xs focus:ring-1 focus:ring-indigo focus:outline-hidden font-mono" placeholder="e.g. Build an authentication service with JWT and refresh tokens...">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label :class="isDarkMode ? 'text-zinc-400' : 'text-slate-600'" class="block text-[11px] font-bold uppercase tracking-wider mb-1.5 font-mono">Depth</label>
+                                    <select v-model="newDepth" :class="isDarkMode ? 'bg-[#050505] border-zinc-800 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'" class="w-full p-2.5 border rounded-lg text-xs focus:ring-1 focus:ring-indigo focus:outline-hidden font-mono">
+                                        <option :value="1">Depth 1 (Fast, Core agents)</option>
+                                        <option :value="2">Depth 2 (Full hierarchical swarm)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label :class="isDarkMode ? 'text-zinc-400' : 'text-slate-600'" class="block text-[11px] font-bold uppercase tracking-wider mb-1.5 font-mono">Mode</label>
+                                    <select v-model="newMode" :class="isDarkMode ? 'bg-[#050505] border-zinc-800 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'" class="w-full p-2.5 border rounded-lg text-xs focus:ring-1 focus:ring-indigo focus:outline-hidden font-mono">
+                                        <option value="auto">Auto (Autonomous gatekeeper)</option>
+                                        <option value="guided">Guided (Human checkpoint verification)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-2">
+                                <button @click="launchSwarmRun" class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo hover:bg-indigo-deep text-white rounded-lg text-xs font-semibold transition-all shadow-md cursor-pointer font-mono">
+                                    <i data-lucide="zap" class="w-3.5 h-3.5 text-indigo-100"></i>
+                                    Initialize Swarm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Swarm Runs Feed -->
+                    <div class="space-y-4">
+                        <div v-if="runs.length === 0" :class="isDarkMode ? 'bg-[#121214] border-[#27272a] text-zinc-500' : 'bg-white border-[#E6EBF1] text-slate-400'" class="p-10 text-center rounded-xl border italic text-xs font-mono">No agent swarm runs recorded.</div>
+                        <div v-for="run in runs" :key="run.id" :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-5 rounded-xl border space-y-4 transition-colors duration-200">
+                            <div :class="isDarkMode ? 'border-zinc-800' : 'border-slate-100'" class="flex justify-between items-center border-b pb-3">
+                                <div class="flex items-center gap-3">
+                                    <span :class="isDarkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-slate-100 border-slate-200 text-slate-600'" class="text-xs font-mono font-bold px-2.5 py-1 rounded border">#{{ run.id }}</span>
+                                    <div>
+                                        <h4 :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="font-bold text-xs font-mono">{{ run.goal }}</h4>
+                                        <div class="flex items-center gap-2 mt-0.5 text-[10px]" :class="isDarkMode ? 'text-zinc-500' : 'text-slate-400'">
+                                            <span>Mode: <strong class="font-mono">{{ run.mode }}</strong></span>
+                                            <span>•</span>
+                                            <span>Depth: <strong class="font-mono">{{ run.depth }}</strong></span>
+                                            <span>•</span>
+                                            <span>Started: <strong class="font-mono">{{ run.date }}</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span :class="{
+                                    'bg-emerald/10 text-emerald border-emerald/30': run.status === 'done', 
+                                    'bg-indigo/10 text-indigo border-indigo/30': run.status === 'running',
+                                    'bg-rose-500/10 text-rose-400 border-rose-500/30': run.status === 'failed'
+                                }" class="px-2.5 py-1 rounded text-[10px] font-bold border font-mono uppercase tracking-wider">
+                                    {{ run.status }}
+                                </span>
+                            </div>
+
+                            <!-- Agent Execution Tree -->
+                            <div :class="isDarkMode ? 'bg-[#050505] border-zinc-800' : 'bg-slate-50 border-slate-200'" class="p-4 rounded-xl border space-y-3">
+                                <div class="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo">Agent Task Hierarchy</div>
+                                <div v-for="agent in run.agents" :key="agent.id" :style="{marginLeft: ((agent.depth - 1) * 20) + 'px'}" :class="isDarkMode ? 'border-zinc-800/80 bg-zinc-900/40' : 'border-slate-200 bg-white'" class="p-3 rounded-lg border space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span :class="isDarkMode ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-slate-100 border-slate-200 text-slate-900'" class="font-mono font-bold text-xs px-2 py-0.5 rounded border">{{ agent.role }}</span>
+                                            <span :class="isDarkMode ? 'text-zinc-300' : 'text-slate-700'" class="text-xs font-medium">{{ agent.task }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span v-if="agent.verdict" :class="agent.verdict === 'PASS' ? 'bg-emerald/10 text-emerald border-emerald/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border">{{ agent.verdict }}</span>
+                                            <span class="text-[10px] font-mono text-zinc-500">r{{ agent.retries }}</span>
+                                            <span :class="{'text-emerald font-bold': agent.status === 'done', 'text-indigo font-bold': agent.status === 'running', 'text-zinc-400': agent.status === 'queued', 'text-rose-400': agent.status === 'failed'}" class="text-[10px] uppercase tracking-wider font-mono px-2 py-0.5 rounded bg-black/20">{{ agent.status }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Agent Result Output (if any) -->
+                                    <div v-if="agent.result" class="mt-2 p-2 rounded bg-black/40 border border-zinc-800 font-mono text-[11px] text-zinc-300 max-h-32 overflow-y-auto whitespace-pre-wrap">
+                                        {{ agent.result }}
+                                    </div>
+
+                                    <!-- Active Saved Guidance Display -->
+                                    <div v-if="agent.decision" class="text-[11px] font-mono text-indigo bg-indigo/10 border border-indigo/20 px-2.5 py-1 rounded">
+                                        Active Guidance: {{ agent.decision }}
+                                    </div>
+
+                                    <!-- Interactive Guidance / Decision Input -->
+                                    <div class="pt-2 flex items-center gap-2">
+                                        <input v-model="agent.decisionInput" @keyup.enter="submitDecision(run.id, agent.id, agent.decisionInput)" :class="isDarkMode ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-300 text-slate-900'" class="flex-1 p-2 border rounded text-xs focus:ring-1 focus:ring-indigo focus:outline-hidden font-mono" placeholder="Provide guidance note or instruction for this agent...">
+                                        <button @click="submitDecision(run.id, agent.id, agent.decisionInput)" class="px-3 py-1.5 bg-indigo hover:bg-indigo-deep text-white rounded text-xs font-semibold transition-colors cursor-pointer font-mono shrink-0">
+                                            Send Guidance
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -390,6 +470,9 @@
                     agents: [],
                     selectedAgent: null,
                     agentContent: '',
+                    newGoal: '',
+                    newDepth: 2,
+                    newMode: 'auto',
                     currentMetadata: { description: '', tech_stack: '', current_state: '', next_steps: '', status: 'WIP' },
                     isEditingMetadata: false,
                     showRawLog: false,
@@ -467,9 +550,27 @@
                 async loadRuns() {
                     const res = await fetch('http://127.0.0.1:8715/api/runs');
                     const runs = await res.json();
+                    
+                    const existingInputs = {};
+                    if (this.runs) {
+                        for (let oldRun of this.runs) {
+                            if (oldRun.agents) {
+                                for (let oldAgent of oldRun.agents) {
+                                    if (oldAgent.decisionInput) {
+                                        existingInputs[oldAgent.id] = oldAgent.decisionInput;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     for(let run of runs) {
                         const res2 = await fetch(`http://127.0.0.1:8715/api/runs/${run.id}`);
-                        run.agents = await res2.json();
+                        const agents = await res2.json();
+                        for (let agent of agents) {
+                            agent.decisionInput = existingInputs[agent.id] || '';
+                        }
+                        run.agents = agents;
                     }
                     this.runs = runs;
                 },
@@ -498,6 +599,59 @@
                     const res = await fetch('http://127.0.0.1:8714/commit', { method: 'POST' });
                     const text = await res.text();
                     this.showToast(text);
+                },
+                async launchSwarmRun() {
+                    if (!this.newGoal.trim()) {
+                        this.showToast('Please enter a goal for the swarm run.');
+                        return;
+                    }
+                    const res = await fetch('http://127.0.0.1:8715/api/runs', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            goal: this.newGoal,
+                            depth: this.newDepth,
+                            mode: this.newMode
+                        })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        this.showToast(data.message || 'Swarm run initialized successfully!');
+                        this.newGoal = '';
+                        this.loadRuns();
+                    } else {
+                        this.showToast(data.error || 'Failed to start swarm run.');
+                    }
+                },
+                async submitDecision(runId, agentId, decision) {
+                    if (!decision || !decision.trim()) {
+                        this.showToast('Please enter a guidance note.');
+                        return;
+                    }
+                    const res = await fetch(`http://127.0.0.1:8715/api/runs/${runId}/decision`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            agent_id: agentId,
+                            decision: decision
+                        })
+                    });
+                    if (res.ok) {
+                        this.showToast('Guidance sent to agent successfully!');
+                        for (let run of this.runs) {
+                            if (run.id === runId && run.agents) {
+                                for (let agent of run.agents) {
+                                    if (agent.id === agentId) {
+                                        agent.decisionInput = '';
+                                        agent.decision = decision;
+                                    }
+                                }
+                            }
+                        }
+                        this.loadRuns();
+                    } else {
+                        this.showToast('Failed to send guidance.');
+                    }
                 }
             },
             mounted() {

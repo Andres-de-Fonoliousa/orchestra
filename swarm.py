@@ -66,12 +66,18 @@ def connect():
 
 
 def roles_dir():
+    local = Path(__file__).resolve().parent / "roles"
+    if local.exists():
+        return local
     override = os.environ.get("ORCHESTRA_HOME")
     base = Path(override) if override else Path.home() / ".config" / "opencode"
     return base / "roles"
 
 
 def skills_dir():
+    local = Path(__file__).resolve().parent / ".opencode" / "skills"
+    if local.exists():
+        return local
     override = os.environ.get("ORCHESTRA_HOME")
     base = Path(override) if override else Path.home() / ".config" / "opencode"
     return base / "skills"
@@ -286,10 +292,14 @@ def execute_one(conn, run_id, a):
     event(conn, run_id, "agent_start", a["role"])
 
     role_doc = read_role(a["role"])
+    cur = conn.execute("SELECT decision FROM run_agents WHERE id=?", (a["id"],))
+    row = cur.fetchone()
+    decision = row[0] if row and row[0] else ""
     prompt = (
         role_doc
         + "\n\n## Task card\n"
         + a["task"]
+        + (("\n\n## Human Guidance / Decision\n" + decision) if decision else "")
         + "\n\n## Skills (apply these)\n"
         + read_skills("")
         + "\n\nWork in the current project directory. Do not touch files outside your scope. "

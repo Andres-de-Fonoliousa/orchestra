@@ -184,23 +184,85 @@ def update_project_metadata(project):
 
 @app.route('/api/runs', methods=['GET'])
 def get_runs():
-    conn = sqlite3.connect(str(Path.home() / ".config" / "opencode" / "memory" / "runs.db"))
+    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
+    if not db_p.exists():
+        return jsonify([])
+    conn = sqlite3.connect(str(db_p))
     cursor = conn.cursor()
-    cursor.execute("SELECT id, goal, status, created_at FROM runs ORDER BY id DESC LIMIT 5")
+    cursor.execute("SELECT id, goal, status, mode, depth, created_at, updated_at FROM runs ORDER BY id DESC LIMIT 20")
     rows = cursor.fetchall()
     conn.close()
-    return jsonify([{"id": r[0], "goal": r[1], "status": r[2], "date": r[3]} for r in rows])
+    return jsonify([{"id": r[0], "goal": r[1], "status": r[2], "mode": r[3], "depth": r[4], "date": r[5], "updated_at": r[6]} for r in rows])
+
+@app.route('/api/runs', methods=['POST'])
+def create_run():
+    data = request.json or {}
+    goal = data.get('goal', '').strip()
+    depth = int(data.get('depth', 2))
+    mode = data.get('mode', 'auto')
+    if not goal:
+        return jsonify({"error": "Goal is required"}), 400
+    
+    import subprocess
+    import sys
+    script_path = Path(__file__).resolve().parent / "swarm.py"
+    cmd = [sys.executable, str(script_path), "run", goal, f"--depth={depth}"]
+    if mode == "guided":
+        cmd.append("--guided")
+    
+    # Spawn background process
+    subprocess.Popen(cmd, cwd=str(Path(__file__).resolve().parent))
+    return jsonify({"status": "success", "message": f"Swarm run started for goal: {goal}"})
 
 @app.route('/api/runs/<int:run_id>', methods=['GET'])
 def get_run_details(run_id):
-    conn = sqlite3.connect(str(Path.home() / ".config" / "opencode" / "memory" / "runs.db"))
+    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
+    if not db_p.exists():
+        return jsonify([])
+    conn = sqlite3.connect(str(db_p))
     cursor = conn.cursor()
-    cursor.execute("SELECT role, status, task FROM run_agents WHERE run_id=? ORDER BY id", (run_id,))
+    cursor.execute("SELECT id, role, depth, task, status, verdict, retries, result, decision, started_at, finished_at FROM run_agents WHERE run_id=? ORDER BY id", (run_id,))
     rows = cursor.fetchall()
     conn.close()
-    return jsonify([{"role": r[0], "status": r[1], "task": r[2]} for r in rows])
+    return jsonify([{
+        "id": r[0],
+        "role": r[1],
+        "depth": r[2],
+        "task": r[3],
+        "status": r[4],
+        "verdict": r[5],
+        "retries": r[6],
+        "result": r[7],
+        "decision": r[8],
+        "started_at": r[9],
+        "finished_at": r[10]
+    } for r in rows])
 
-ROLES_DIR = Path.home() / "Desktop" / "Python" / "agent_orchistration" / "roles"
+@app.route('/api/runs/<int:run_id>/events', methods=['GET'])
+def get_run_events(run_id):
+    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
+    if not db_p.exists():
+        return jsonify([])
+    conn = sqlite3.connect(str(db_p))
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, ts, type, payload FROM run_events WHERE run_id=? ORDER BY id DESC LIMIT 50", (run_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return jsonify([{"id": r[0], "ts": r[1], "type": r[2], "payload": r[3]} for r in rows])
+
+@app.route('/api/runs/<int:run_id>/decision', methods=['POST'])
+def save_agent_decision(run_id):
+    data = request.json or {}
+    agent_id = int(data.get('agent_id', 0))
+    note = data.get('decision', '').strip()
+    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
+    conn = sqlite3.connect(str(db_p))
+    conn.execute("UPDATE run_agents SET decision=? WHERE run_id=? AND id=?", (note, run_id, agent_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+ROLES_DIR = Path(__file__).resolve().parent / "roles"
 
 @app.route('/api/agents', methods=['GET'])
 def get_agents():
