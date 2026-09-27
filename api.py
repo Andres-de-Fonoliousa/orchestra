@@ -182,12 +182,55 @@ def update_project_metadata(project):
     conn.close()
     return jsonify({"status": "success"})
 
+def get_runs_db():
+    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
+    db_p.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_p))
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            goal TEXT NOT NULL,
+            plan TEXT NOT NULL DEFAULT '[]',
+            status TEXT NOT NULL DEFAULT 'planning',
+            mode TEXT NOT NULL DEFAULT 'auto',
+            depth INTEGER NOT NULL DEFAULT 2,
+            session_state TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS run_agents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            depth INTEGER NOT NULL DEFAULT 1,
+            task TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'queued',
+            verdict TEXT DEFAULT '',
+            retries INTEGER NOT NULL DEFAULT 0,
+            result TEXT DEFAULT '',
+            decision TEXT DEFAULT '',
+            started_at TEXT,
+            finished_at TEXT,
+            FOREIGN KEY (run_id) REFERENCES runs(id)
+        );
+        CREATE TABLE IF NOT EXISTS run_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            ts TEXT NOT NULL,
+            type TEXT NOT NULL,
+            payload TEXT DEFAULT ''
+        );
+    """)
+    try:
+        conn.execute("ALTER TABLE runs ADD COLUMN session_state TEXT NOT NULL DEFAULT '{}'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
+    return conn
+
 @app.route('/api/runs', methods=['GET'])
 def get_runs():
-    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
-    if not db_p.exists():
-        return jsonify([])
-    conn = sqlite3.connect(str(db_p))
+    conn = get_runs_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id, goal, status, mode, depth, created_at, updated_at FROM runs ORDER BY id DESC LIMIT 20")
     rows = cursor.fetchall()
@@ -216,10 +259,7 @@ def create_run():
 
 @app.route('/api/runs/<int:run_id>', methods=['GET'])
 def get_run_details(run_id):
-    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
-    if not db_p.exists():
-        return jsonify([])
-    conn = sqlite3.connect(str(db_p))
+    conn = get_runs_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id, role, depth, task, status, verdict, retries, result, decision, started_at, finished_at FROM run_agents WHERE run_id=? ORDER BY id", (run_id,))
     rows = cursor.fetchall()
@@ -240,10 +280,7 @@ def get_run_details(run_id):
 
 @app.route('/api/runs/<int:run_id>/events', methods=['GET'])
 def get_run_events(run_id):
-    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
-    if not db_p.exists():
-        return jsonify([])
-    conn = sqlite3.connect(str(db_p))
+    conn = get_runs_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id, ts, type, payload FROM run_events WHERE run_id=? ORDER BY id DESC LIMIT 50", (run_id,))
     rows = cursor.fetchall()
@@ -255,9 +292,32 @@ def save_agent_decision(run_id):
     data = request.json or {}
     agent_id = int(data.get('agent_id', 0))
     note = data.get('decision', '').strip()
-    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
-    conn = sqlite3.connect(str(db_p))
+    conn = get_runs_db()
     conn.execute("UPDATE run_agents SET decision=? WHERE run_id=? AND id=?", (note, run_id, agent_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+@app.route('/api/runs/<int:run_id>/session', methods=['GET'])
+def get_run_session_state(run_id):
+    conn = get_runs_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT session_state FROM runs WHERE id=?", (run_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row and row[0]:
+        try:
+            return jsonify(json.loads(row[0]))
+        except ValueError:
+            return jsonify({})
+    return jsonify({})
+
+@app.route('/api/runs/<int:run_id>/session', methods=['POST'])
+def update_run_session_state(run_id):
+    data = request.json or {}
+    conn = get_runs_db()
+    state_json = json.dumps(data, ensure_ascii=False)
+    conn.execute("UPDATE runs SET session_state=?, updated_at=datetime('now') WHERE id=?", (state_json, run_id))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})

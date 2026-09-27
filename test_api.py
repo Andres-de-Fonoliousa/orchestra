@@ -38,5 +38,22 @@ class ApiTestCase(unittest.TestCase):
         data = response.get_json()
         self.assertIsInstance(data, list)
 
+    def test_run_session_state(self):
+        from api import get_runs_db
+        conn = get_runs_db()
+        conn.execute("INSERT OR REPLACE INTO runs (id, goal, status, created_at, updated_at) VALUES (999, 'Test Goal', 'planning', '2026-09-27 00:00:00', '2026-09-27 00:00:00')")
+        conn.commit()
+        conn.close()
+
+        # Test updating and getting session state for run ID 999
+        res_post = self.app.post('/api/runs/999/session', json={"status": "testing", "checkpoint": "step1"})
+        self.assertEqual(res_post.status_code, 200)
+        
+        res_get = self.app.get('/api/runs/999/session')
+        self.assertEqual(res_get.status_code, 200)
+        data = res_get.get_json()
+        self.assertEqual(data.get("status"), "testing")
+        self.assertEqual(data.get("checkpoint"), "step1")
+
 if __name__ == '__main__':
     unittest.main()

@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS runs (
     status TEXT NOT NULL DEFAULT 'planning',
     mode TEXT NOT NULL DEFAULT 'auto',
     depth INTEGER NOT NULL DEFAULT 2,
+    session_state TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -51,6 +52,26 @@ CREATE TABLE IF NOT EXISTS run_events (
 """
 
 
+def save_session_state(conn, run_id, state_dict):
+    state_json = json.dumps(state_dict, ensure_ascii=False)
+    conn.execute(
+        "UPDATE runs SET session_state=?, updated_at=? WHERE id=?",
+        (state_json, now(), run_id),
+    )
+    conn.commit()
+    event(conn, run_id, "session_checkpoint", state_json[:500])
+
+
+def load_session_state(conn, run_id):
+    row = conn.execute("SELECT session_state FROM runs WHERE id=?", (run_id,)).fetchone()
+    if row and row[0]:
+        try:
+            return json.loads(row[0])
+        except ValueError:
+            return {}
+    return {}
+
+
 def db_path():
     override = os.environ.get("ORCHESTRA_HOME")
     base = Path(override) if override else Path.home() / ".config" / "opencode"
@@ -62,6 +83,11 @@ def connect():
     db.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db))
     conn.executescript(SCHEMA)
+    try:
+        conn.execute("ALTER TABLE runs ADD COLUMN session_state TEXT NOT NULL DEFAULT '{}'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
     return conn
 
 
@@ -198,6 +224,7 @@ def run_plan(conn, run_id, goal, depth):
         )
         conn.commit()
         event(conn, run_id, "plan_failed", out[:500])
+        save_session_state(conn, run_id, {"status": "failed", "error": "planning failed"})
         print("Planning failed — no agent plan produced.")
         print(out[:800])
         return False
@@ -212,6 +239,7 @@ def run_plan(conn, run_id, goal, depth):
         )
     conn.commit()
     event(conn, run_id, "planned", json.dumps(agents, ensure_ascii=False)[:500])
+    save_session_state(conn, run_id, {"status": "planned", "agent_count": len(agents)})
     return True
 
 
@@ -220,6 +248,9 @@ def run_execute(conn, run_id, mode, max_parallel):
     conn.execute("UPDATE runs SET status='running', updated_at=? WHERE id=?", (now(), run_id))
     conn.commit()
     event(conn, run_id, "started", "mode=" + mode)
+    state = load_session_state(conn, run_id)
+    state["status"] = "running"
+    save_session_state(conn, run_id, state)
 
     rows = conn.execute(
         "SELECT id, role, depth, task, status, retries FROM run_agents WHERE run_id=? ORDER BY id",
@@ -229,15 +260,14 @@ def run_execute(conn, run_id, mode, max_parallel):
         {"id": r[0], "role": r[1], "depth": r[2], "task": r[3], "status": r[4], "retries": r[5]}
         for r in rows
     ]
-    done = 0
+    done = sum(1 for a in agents if a["status"] == "done")
     total = len(agents)
     for a in agents:
         if a["status"] in ("done", "skipped", "blocked"):
-            if a["status"] == "done":
-                done += 1
             continue
         if mode == "guided":
             print(f"PAUSED at {a['role']} — approve on the board or 'orchestra resume {run_id}'")
+            save_session_state(conn, run_id, {"status": "paused", "paused_at": a["role"], "done": done, "total": total})
             return False
         rc = execute_one(conn, run_id, a)
         if rc == "ok":
@@ -270,14 +300,17 @@ def run_execute(conn, run_id, mode, max_parallel):
                 conn.commit()
                 event(conn, run_id, "blocked", a["role"])
                 print(f"  !! {a['role']} BLOCKED")
+        save_session_state(conn, run_id, {"status": "running", "done": done, "total": total, "current_role": a["role"]})
     if done == total:
         conn.execute("UPDATE runs SET status='done', updated_at=? WHERE id=?", (now(), run_id))
         conn.commit()
         event(conn, run_id, "done", "")
+        save_session_state(conn, run_id, {"status": "done", "done": done, "total": total})
         print(f"Run {run_id} complete: {done}/{total} agents done.")
     else:
         conn.execute("UPDATE runs SET status='partial', updated_at=? WHERE id=?", (now(), run_id))
         conn.commit()
+        save_session_state(conn, run_id, {"status": "partial", "done": done, "total": total})
         print(f"Run {run_id} partial: {done}/{total} done, others blocked/skipped.")
 
 
