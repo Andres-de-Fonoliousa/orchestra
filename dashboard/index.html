@@ -319,6 +319,67 @@
 
                 <!-- LIVE MONITOR TAB -->
                 <div v-if="currentTab === 'monitor'" class="max-w-4xl mx-auto space-y-6">
+                    <!-- Telemetry & Metrics Summary Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-4 rounded-xl border flex flex-col justify-between transition-colors duration-200">
+                            <span :class="isDarkMode ? 'text-zinc-400' : 'text-slate-500'" class="text-[10px] font-mono uppercase tracking-wider">Total Runs</span>
+                            <span :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xl font-bold font-mono mt-1">{{ telemetry.total_runs }}</span>
+                        </div>
+                        <div :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-4 rounded-xl border flex flex-col justify-between transition-colors duration-200">
+                            <span class="text-[10px] font-mono uppercase tracking-wider text-indigo">Active Runs</span>
+                            <span :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xl font-bold font-mono mt-1">{{ telemetry.active_runs }}</span>
+                        </div>
+                        <div :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-4 rounded-xl border flex flex-col justify-between transition-colors duration-200">
+                            <span class="text-[10px] font-mono uppercase tracking-wider text-emerald">Completed</span>
+                            <span :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xl font-bold font-mono mt-1">{{ telemetry.completed_runs }}</span>
+                        </div>
+                        <div :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-4 rounded-xl border flex flex-col justify-between transition-colors duration-200">
+                            <span class="text-[10px] font-mono uppercase tracking-wider text-rose-400">Failed Runs</span>
+                            <span :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xl font-bold font-mono mt-1">{{ telemetry.failed_runs }}</span>
+                        </div>
+                        <div :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="col-span-2 sm:col-span-1 p-4 rounded-xl border flex flex-col justify-between transition-colors duration-200">
+                            <span class="text-[10px] font-mono uppercase tracking-wider text-indigo">Success Rate</span>
+                            <span :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xl font-bold font-mono mt-1">{{ telemetry.success_rate }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Recent Errors / Failure Tracking Panel -->
+                    <div v-if="telemetry.recent_errors && telemetry.recent_errors.length > 0" :class="isDarkMode ? 'bg-[#121214] border-rose-500/30' : 'bg-white border-rose-200 shadow-light-card'" class="p-5 rounded-xl border space-y-3 transition-colors duration-200">
+                        <div class="flex items-center justify-between border-b pb-2.5" :class="isDarkMode ? 'border-zinc-800' : 'border-slate-100'">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
+                                <h3 class="text-xs font-bold uppercase tracking-wider font-mono text-rose-400">Error Tracking & Recent Failures ({{ telemetry.recent_errors.length }})</h3>
+                            </div>
+                            <span class="text-[10px] font-mono text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">Action Required</span>
+                        </div>
+                        <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                            <div v-for="err in telemetry.recent_errors" :key="err.run_id + err.role" :class="isDarkMode ? 'bg-zinc-900/60 border-rose-500/20' : 'bg-rose-50/50 border-rose-100'" class="p-3 rounded-lg border space-y-1 font-mono">
+                                <div class="flex justify-between items-center text-xs">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-rose-400">Run #{{ err.run_id }}</span>
+                                        <span class="bg-black/30 px-1.5 py-0.5 rounded text-[11px] text-zinc-300">{{ err.role }}</span>
+                                        <span class="text-zinc-400 truncate max-w-xs">{{ err.task }}</span>
+                                    </div>
+                                    <span class="text-[10px] text-rose-400 uppercase font-bold">{{ err.status }}</span>
+                                </div>
+                                <div class="text-[11px] text-zinc-300 bg-black/40 p-2 rounded border border-rose-500/10 overflow-x-auto whitespace-pre-wrap">
+                                    {{ err.error_message || 'Agent execution failed or returned FAIL verdict.' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Run Status Filter Bar -->
+                    <div class="flex items-center justify-between">
+                        <h3 :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xs font-bold uppercase tracking-wider font-mono">Swarm Execution Runs</h3>
+                        <div class="flex items-center gap-1 bg-black/10 p-1 rounded-lg border" :class="isDarkMode ? 'border-zinc-800' : 'border-slate-200'">
+                            <button @click="runFilter = 'all'" :class="{'bg-indigo text-white font-semibold': runFilter === 'all', 'text-zinc-400 hover:text-white': runFilter !== 'all'}" class="px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">All ({{ runs.length }})</button>
+                            <button @click="runFilter = 'running'" :class="{'bg-indigo text-white font-semibold': runFilter === 'running', 'text-zinc-400 hover:text-white': runFilter !== 'running'}" class="px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">Running</button>
+                            <button @click="runFilter = 'done'" :class="{'bg-indigo text-white font-semibold': runFilter === 'done', 'text-zinc-400 hover:text-white': runFilter !== 'done'}" class="px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">Completed</button>
+                            <button @click="runFilter = 'failed'" :class="{'bg-indigo text-white font-semibold': runFilter === 'failed', 'text-zinc-400 hover:text-white': runFilter !== 'failed'}" class="px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">Failed</button>
+                        </div>
+                    </div>
+
                     <!-- Launch New Swarm Run Card -->
                     <div :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-6 rounded-xl border space-y-4 transition-colors duration-200">
                         <div class="flex items-center justify-between border-b pb-3" :class="isDarkMode ? 'border-zinc-800' : 'border-slate-100'">
@@ -360,8 +421,8 @@
 
                     <!-- Active Swarm Runs Feed -->
                     <div class="space-y-4">
-                        <div v-if="runs.length === 0" :class="isDarkMode ? 'bg-[#121214] border-[#27272a] text-zinc-500' : 'bg-white border-[#E6EBF1] text-slate-400'" class="p-10 text-center rounded-xl border italic text-xs font-mono">No agent swarm runs recorded.</div>
-                        <div v-for="run in runs" :key="run.id" :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-5 rounded-xl border space-y-4 transition-colors duration-200">
+                        <div v-if="filteredRuns.length === 0" :class="isDarkMode ? 'bg-[#121214] border-[#27272a] text-zinc-500' : 'bg-white border-[#E6EBF1] text-slate-400'" class="p-10 text-center rounded-xl border italic text-xs font-mono">No agent swarm runs match filter.</div>
+                        <div v-for="run in filteredRuns" :key="run.id" :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-5 rounded-xl border space-y-4 transition-colors duration-200">
                             <div :class="isDarkMode ? 'border-zinc-800' : 'border-slate-100'" class="flex justify-between items-center border-b pb-3">
                                 <div class="flex items-center gap-3">
                                     <span :class="isDarkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-slate-100 border-slate-200 text-slate-600'" class="text-xs font-mono font-bold px-2.5 py-1 rounded border">#{{ run.id }}</span>
@@ -478,7 +539,15 @@
                     showRawLog: false,
                     toast: { show: false, message: '' },
                     isSidebarCollapsed: false,
-                    isDarkMode: true
+                    isDarkMode: true,
+                    telemetry: { total_runs: 0, active_runs: 0, completed_runs: 0, failed_runs: 0, total_agents: 0, success_rate: 0.0, recent_errors: [] },
+                    runFilter: 'all'
+                }
+            },
+            computed: {
+                filteredRuns() {
+                    if (this.runFilter === 'all') return this.runs;
+                    return this.runs.filter(r => r.status === this.runFilter);
                 }
             },
             watch: {
@@ -489,7 +558,10 @@
                     this.showRawLog = false;
                 },
                 currentTab(tab) { 
-                    if (tab === 'monitor') this.loadRuns();
+                    if (tab === 'monitor') {
+                        this.loadRuns();
+                        this.loadTelemetry();
+                    }
                     if (tab === 'agents') this.loadAgents();
                 }
             },
@@ -547,6 +619,10 @@
                     });
                     this.showToast('Knowledge base saved successfully!');
                 },
+                async loadTelemetry() {
+                    const res = await fetch('http://127.0.0.1:8715/api/monitor/telemetry');
+                    this.telemetry = await res.json();
+                },
                 async loadRuns() {
                     const res = await fetch('http://127.0.0.1:8715/api/runs');
                     const runs = await res.json();
@@ -573,6 +649,7 @@
                         run.agents = agents;
                     }
                     this.runs = runs;
+                    this.loadTelemetry();
                 },
                 async loadAgents() {
                     const res = await fetch('http://127.0.0.1:8715/api/agents');
@@ -660,8 +737,9 @@
                 this.loadIdentity();
                 this.loadKnowledge();
                 this.loadRuns();
+                this.loadTelemetry();
                 this.loadAgents();
-                setInterval(() => { if (this.currentTab === 'monitor') this.loadRuns(); }, 2000);
+                setInterval(() => { if (this.currentTab === 'monitor') { this.loadRuns(); this.loadTelemetry(); } }, 2000);
             },
             updated() {
                 lucide.createIcons();
