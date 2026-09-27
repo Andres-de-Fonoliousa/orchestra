@@ -24,5 +24,19 @@ class ApiTestCase(unittest.TestCase):
         data = response.get_json()
         self.assertIn("error", data)
 
+    def test_get_monitor_telemetry(self):
+        response = self.app.get('/api/monitor/telemetry')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertIn("total_runs", data)
+        self.assertIn("success_rate", data)
+        self.assertIn("recent_errors", data)
+
+    def test_get_run_errors(self):
+        response = self.app.get('/api/runs/999999/errors')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertIsInstance(data, list)
+
 if __name__ == '__main__':
     unittest.main()

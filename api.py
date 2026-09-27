@@ -287,5 +287,84 @@ def update_agent(role):
     role_path.write_text(data.get('content', ''), encoding='utf-8')
     return jsonify({"status": "success"})
 
+@app.route('/api/monitor/telemetry', methods=['GET'])
+def get_monitor_telemetry():
+    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
+    if not db_p.exists():
+        return jsonify({
+            "total_runs": 0,
+            "active_runs": 0,
+            "completed_runs": 0,
+            "failed_runs": 0,
+            "total_agents": 0,
+            "success_rate": 0.0,
+            "recent_errors": []
+        })
+    conn = sqlite3.connect(str(db_p))
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*), SUM(status='running'), SUM(status='done'), SUM(status='failed') FROM runs")
+    run_row = cursor.fetchone()
+    total_runs = run_row[0] or 0
+    active_runs = run_row[1] or 0
+    completed_runs = run_row[2] or 0
+    failed_runs = run_row[3] or 0
+    
+    cursor.execute("SELECT COUNT(*), SUM(verdict='PASS'), SUM(status='failed') FROM run_agents")
+    agent_row = cursor.fetchone()
+    total_agents = agent_row[0] or 0
+    passed_agents = agent_row[1] or 0
+    success_rate = (passed_agents / total_agents * 100.0) if total_agents > 0 else 0.0
+    
+    cursor.execute("SELECT run_id, role, task, result, status FROM run_agents WHERE status='failed' OR verdict='FAIL' ORDER BY id DESC LIMIT 10")
+    error_rows = cursor.fetchall()
+    recent_errors = [{
+        "run_id": r[0],
+        "role": r[1],
+        "task": r[2],
+        "error_message": r[3],
+        "status": r[4]
+    } for r in error_rows]
+    
+    conn.close()
+    return jsonify({
+        "total_runs": total_runs,
+        "active_runs": active_runs,
+        "completed_runs": completed_runs,
+        "failed_runs": failed_runs,
+        "total_agents": total_agents,
+        "success_rate": round(success_rate, 2),
+        "recent_errors": recent_errors
+    })
+
+@app.route('/api/runs/<int:run_id>/errors', methods=['GET'])
+def get_run_errors(run_id):
+    db_p = Path.home() / ".config" / "opencode" / "memory" / "runs.db"
+    if not db_p.exists():
+        return jsonify([])
+    conn = sqlite3.connect(str(db_p))
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, role, depth, task, status, verdict, retries, result FROM run_agents WHERE run_id=? AND (status='failed' OR verdict='FAIL') ORDER BY id", (run_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return jsonify([{
+        "agent_id": r[0],
+        "role": r[1],
+        "depth": r[2],
+        "task": r[3],
+        "status": r[4],
+        "verdict": r[5],
+        "retries": r[6],
+        "error_detail": r[7]
+    } for r in rows])
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({"error": "Resource not found", "status": 404}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error", "status": 500}), 500
+
 if __name__ == '__main__':
     app.run(port=8715)
