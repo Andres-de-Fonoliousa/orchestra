@@ -1,0 +1,39 @@
+/* Orchestra Design Tokens & Theme Styles */
+:root {
+  --token-primary: #635BFF;
+  --token-primary-hover: #4A43DB;
+  --token-accent: #81B81A;
+  --token-surface: #FFFFFF;
+  --token-surface-dark: #09090b;
+  --token-muted: #697386;
+  --token-border: #E6EBF1;
+  --token-border-dark: #27272a;
+  --token-shadow-card: 0 1px 3px rgba(10,37,64,0.06), 0 4px 12px rgba(10,37,64,0.04);
+  --token-shadow-lift: 0 10px 30px rgba(99,91,255,0.15);
+  --token-radius-lg: 1rem;
+  --token-radius-xl: 1.5rem;
+}
+
+.dark {
+  --token-surface: #121214;
+  --token-surface-dark: #050507;
+  --token-border: #27272a;
+  --token-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.6);
+  --token-shadow-lift: 0 10px 30px rgba(99, 91, 255, 0.25);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-dark {
+  background: rgba(18, 18, 20, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glow-indigo {
+  box-shadow: 0 0 25px rgba(99, 91, 255, 0.35);
+}
