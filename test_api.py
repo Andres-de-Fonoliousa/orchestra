@@ -87,5 +87,17 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(data.get("status"), "success")
         self.assertEqual(data.get("run_status"), "paused")
 
+    def test_run_1002_migration(self):
+        from api import get_runs_db
+        conn = get_runs_db()
+        conn.execute("INSERT OR REPLACE INTO runs (id, goal, status, created_at, updated_at) VALUES (1002, 'Run 1002 Backend Updates and Data Migrations', 'running', '2026-09-28 00:00:00', '2026-09-28 00:00:00')")
+        conn.commit()
+        conn.close()
+
+        res = self.app.get('/api/runs/1002/session')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIsInstance(data, dict)
+
 if __name__ == '__main__':
     unittest.main()
