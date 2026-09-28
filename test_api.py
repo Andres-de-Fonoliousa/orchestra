@@ -67,5 +67,25 @@ class ApiTestCase(unittest.TestCase):
         data = res.get_json()
         self.assertEqual(data.get("status"), "success")
 
+    def test_orchestrator_interact(self):
+        res = self.app.post('/api/orchestrator/interact', json={"prompt": "Status report"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data.get("status"), "success")
+        self.assertIn("response", data)
+
+    def test_run_control(self):
+        from api import get_runs_db
+        conn = get_runs_db()
+        conn.execute("INSERT OR REPLACE INTO runs (id, goal, status, created_at, updated_at) VALUES (1001, 'Test Control Goal', 'running', '2026-09-27 00:00:00', '2026-09-27 00:00:00')")
+        conn.commit()
+        conn.close()
+
+        res = self.app.post('/api/runs/1001/control', json={"action": "pause"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data.get("status"), "success")
+        self.assertEqual(data.get("run_status"), "paused")
+
 if __name__ == '__main__':
     unittest.main()
