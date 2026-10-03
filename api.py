@@ -130,6 +130,33 @@ def update_knowledge():
     notes_path.write_text(data.get('content', ''), encoding='utf-8')
     return jsonify({"status": "success"})
 
+@app.route('/api/temperature', methods=['GET'])
+def get_temperature():
+    cfg_path = Path.home() / ".config" / "opencode" / "opencode.json"
+    temp = 0.2
+    if cfg_path.exists():
+        try:
+            data = json.loads(cfg_path.read_text(encoding='utf-8-sig'))
+            temp = data.get("temperature", 0.2)
+        except Exception:
+            pass
+    return jsonify({"temperature": temp})
+
+@app.route('/api/temperature', methods=['POST'])
+def update_temperature():
+    data = request.json or {}
+    temp = float(data.get('temperature', 0.2))
+    cfg_path = Path.home() / ".config" / "opencode" / "opencode.json"
+    cfg = {}
+    if cfg_path.exists():
+        try:
+            cfg = json.loads(cfg_path.read_text(encoding='utf-8-sig'))
+        except Exception:
+            pass
+    cfg["temperature"] = temp
+    cfg_path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding='utf-8')
+    return jsonify({"status": "success", "temperature": temp})
+
 # --- PROJECT METADATA SYSTEM ---
 
 def init_metadata_db():

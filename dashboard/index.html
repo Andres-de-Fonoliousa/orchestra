@@ -319,6 +319,29 @@
                         </div>
                         <textarea v-model="knowledge" :class="isDarkMode ? 'bg-[#050505] border-zinc-800 text-zinc-200' : 'bg-slate-50 border-slate-200 text-slate-900'" class="w-full h-52 p-3.5 border rounded-lg font-mono text-xs focus:ring-1 focus:ring-indigo focus:outline-hidden leading-relaxed"></textarea>
                     </div>
+
+                    <!-- Model Temperature Control Card -->
+                    <div :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-6 rounded-xl border space-y-4 transition-colors duration-200">
+                        <div :class="isDarkMode ? 'border-zinc-800' : 'border-slate-100'" class="border-b pb-3 flex justify-between items-center">
+                            <div>
+                                <h3 :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xs font-bold uppercase tracking-wider font-mono">Model Temperature Control</h3>
+                                <p :class="isDarkMode ? 'text-zinc-400' : 'text-slate-500'" class="text-[11px] mt-0.5">Control generation randomness (0.0 = Precise & Deterministic, 1.0 = Creative & Exploratory).</p>
+                            </div>
+                            <button @click="saveTemperature" class="px-3 py-1.5 bg-indigo text-white rounded-lg text-xs font-semibold hover:bg-indigo-deep transition-colors shadow-md cursor-pointer font-mono">Save</button>
+                        </div>
+                        <div class="space-y-3 pt-2">
+                            <div class="flex justify-between items-center font-mono text-xs">
+                                <span :class="isDarkMode ? 'text-zinc-400' : 'text-slate-600'">Current Temperature:</span>
+                                <span class="px-2.5 py-1 rounded bg-indigo/10 border border-indigo/20 text-indigo font-bold text-sm">{{ temperature }}</span>
+                            </div>
+                            <input type="range" min="0.0" max="1.0" step="0.05" v-model.number="temperature" class="w-full accent-indigo cursor-pointer">
+                            <div class="flex justify-between text-[10px] font-mono text-zinc-500">
+                                <span>0.0 (Precise / Code / Strict)</span>
+                                <span>0.5 (Balanced)</span>
+                                <span>1.0 (Creative / Exploratory)</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- LIVE MONITOR TAB -->
@@ -536,6 +559,7 @@
                     currentTab: 'projects',
                     identity: '',
                     knowledge: '',
+                    temperature: 0.2,
                     runs: [],
                     agents: [],
                     selectedAgent: null,
@@ -750,6 +774,19 @@
                     } else {
                         this.showToast('Failed to clear runs.');
                     }
+                },
+                async loadTemperature() {
+                    const res = await fetch('/api/temperature');
+                    const data = await res.json();
+                    this.temperature = data.temperature !== undefined ? data.temperature : 0.2;
+                },
+                async saveTemperature() {
+                    await fetch('/api/temperature', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({temperature: this.temperature})
+                    });
+                    this.showToast('Model temperature saved successfully!');
                 }
             },
             mounted() {
@@ -757,6 +794,7 @@
                 this.loadMemory();
                 this.loadIdentity();
                 this.loadKnowledge();
+                this.loadTemperature();
                 this.loadRuns();
                 this.loadTelemetry();
                 this.loadAgents();
