@@ -255,15 +255,19 @@
                             </div>
                         </div>
 
-                        <!-- Collapsible Activity Log Switch -->
-                        <div class="pt-2">
-                            <button @click="showRawLog = !showRawLog" :class="isDarkMode ? 'bg-[#121214] border-[#27272a] text-zinc-300 hover:text-white' : 'bg-white border-[#E6EBF1] text-slate-700 hover:text-primary shadow-light-card'" class="inline-flex items-center gap-2 text-xs font-medium cursor-pointer border px-3.5 py-2 rounded-lg font-mono transition-colors">
-                                <i data-lucide="terminal" class="w-3.5 h-3.5 text-indigo"></i>
-                                <span>{{ showRawLog ? 'Hide' : 'Show' }} Raw Activity Log ({{ memory.length }} events)</span>
-                                <svg class="w-3.5 h-3.5 transform transition-transform ml-1" :class="{'rotate-180': showRawLog}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
+                        <!-- Project Memory Timeline Section -->
+                        <div class="space-y-3 pt-4">
+                            <div class="flex items-center justify-between">
+                                <h4 :class="isDarkMode ? 'text-white' : 'text-slate-900'" class="text-xs font-bold uppercase tracking-wider font-mono">Project Memory Timeline ({{ memory.length }})</h4>
+                            </div>
+                            <div v-if="memory.length === 0" :class="isDarkMode ? 'bg-[#121214] border-[#27272a] text-zinc-500' : 'bg-white border-[#E6EBF1] text-slate-400'" class="p-8 text-center rounded-xl border italic text-xs font-mono">No memory entries found for {{ currentProject }}.</div>
+                            <div v-for="entry in memory" :key="entry.date + entry.title" :class="isDarkMode ? 'bg-[#121214] border-[#27272a]' : 'bg-white border-[#E6EBF1] shadow-light-card'" class="p-5 rounded-xl border space-y-2 transition-colors duration-200">
+                                <div :class="isDarkMode ? 'border-zinc-800' : 'border-slate-100'" class="flex justify-between items-start border-b pb-2">
+                                    <h3 :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="font-bold text-xs font-mono">{{ entry.title }}</h3>
+                                    <span :class="isDarkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-slate-100 border-slate-200 text-slate-600'" class="text-[10px] font-mono px-2 py-0.5 rounded border">{{ entry.date }}</span>
+                                </div>
+                                <p :class="isDarkMode ? 'text-zinc-300' : 'text-slate-600'" class="text-xs leading-relaxed whitespace-pre-line pt-1">{{ entry.body }}</p>
+                            </div>
                         </div>
                     </div>
 
@@ -370,8 +374,13 @@
                     </div>
 
                     <!-- Run Status Filter Bar -->
-                    <div class="flex items-center justify-between">
-                        <h3 :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xs font-bold uppercase tracking-wider font-mono">Swarm Execution Runs</h3>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <h3 :class="isDarkMode ? 'text-white' : 'text-[#0A2540]'" class="text-xs font-bold uppercase tracking-wider font-mono">Swarm Execution Runs</h3>
+                            <button @click="clearAllRuns" class="px-2.5 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-lg text-[10px] font-semibold hover:bg-rose-500/20 transition-colors cursor-pointer font-mono flex items-center gap-1.5" title="Clear all runs and reset monitor">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i> Clear Runs
+                            </button>
+                        </div>
                         <div class="flex items-center gap-1 bg-black/10 p-1 rounded-lg border" :class="isDarkMode ? 'border-zinc-800' : 'border-slate-200'">
                             <button @click="runFilter = 'all'" :class="{'bg-indigo text-white font-semibold': runFilter === 'all', 'text-zinc-400 hover:text-white': runFilter !== 'all'}" class="px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">All ({{ runs.length }})</button>
                             <button @click="runFilter = 'running'" :class="{'bg-indigo text-white font-semibold': runFilter === 'running', 'text-zinc-400 hover:text-white': runFilter !== 'running'}" class="px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">Running</button>
@@ -572,20 +581,20 @@
                     setTimeout(() => { this.toast.show = false; }, 3000);
                 },
                 async loadProjects() {
-                    const res = await fetch('http://127.0.0.1:8715/api/projects');
+                    const res = await fetch('/api/projects');
                     this.projects = await res.json();
                 },
                 async loadMemory() {
-                    const url = this.currentProject ? `http://127.0.0.1:8715/api/memory?project=${this.currentProject}` : 'http://127.0.0.1:8715/api/memory';
+                    const url = this.currentProject ? `/api/memory?project=${this.currentProject}` : '/api/memory';
                     const res = await fetch(url);
                     this.memory = await res.json();
                 },
                 async loadMetadata(proj) {
-                    const res = await fetch(`http://127.0.0.1:8715/api/projects/metadata/${proj}`);
+                    const res = await fetch(`/api/projects/metadata/${proj}`);
                     this.currentMetadata = await res.json();
                 },
                 async saveMetadata() {
-                    await fetch(`http://127.0.0.1:8715/api/projects/metadata/${this.currentProject}`, {
+                    await fetch(`/api/projects/metadata/${this.currentProject}`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(this.currentMetadata)
@@ -594,12 +603,12 @@
                     this.showToast('Project roadmap updated successfully!');
                 },
                 async loadIdentity() {
-                    const res = await fetch('http://127.0.0.1:8715/api/identity');
+                    const res = await fetch('/api/identity');
                     const data = await res.json();
                     this.identity = data.content;
                 },
                 async saveIdentity() {
-                    await fetch('http://127.0.0.1:8715/api/config/identity', {
+                    await fetch('/api/config/identity', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({content: this.identity})
@@ -607,12 +616,12 @@
                     this.showToast('Identity configuration saved successfully!');
                 },
                 async loadKnowledge() {
-                    const res = await fetch('http://127.0.0.1:8715/api/knowledge');
+                    const res = await fetch('/api/knowledge');
                     const data = await res.json();
                     this.knowledge = data.content;
                 },
                 async saveKnowledge() {
-                    await fetch('http://127.0.0.1:8715/api/config/knowledge', {
+                    await fetch('/api/config/knowledge', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({content: this.knowledge})
@@ -620,11 +629,11 @@
                     this.showToast('Knowledge base saved successfully!');
                 },
                 async loadTelemetry() {
-                    const res = await fetch('http://127.0.0.1:8715/api/monitor/telemetry');
+                    const res = await fetch('/api/monitor/telemetry');
                     this.telemetry = await res.json();
                 },
                 async loadRuns() {
-                    const res = await fetch('http://127.0.0.1:8715/api/runs');
+                    const res = await fetch('/api/runs');
                     const runs = await res.json();
                     
                     const existingInputs = {};
@@ -641,7 +650,7 @@
                     }
 
                     for(let run of runs) {
-                        const res2 = await fetch(`http://127.0.0.1:8715/api/runs/${run.id}`);
+                        const res2 = await fetch(`/api/runs/${run.id}`);
                         const agents = await res2.json();
                         for (let agent of agents) {
                             agent.decisionInput = existingInputs[agent.id] || '';
@@ -652,7 +661,7 @@
                     this.loadTelemetry();
                 },
                 async loadAgents() {
-                    const res = await fetch('http://127.0.0.1:8715/api/agents');
+                    const res = await fetch('/api/agents');
                     this.agents = await res.json();
                     if (this.agents.length > 0 && !this.selectedAgent) {
                         this.loadAgent(this.agents[0]);
@@ -660,12 +669,12 @@
                 },
                 async loadAgent(role) {
                     this.selectedAgent = role;
-                    const res = await fetch(`http://127.0.0.1:8715/api/agents/${role}`);
+                    const res = await fetch(`/api/agents/${role}`);
                     const data = await res.json();
                     this.agentContent = data.content;
                 },
                 async saveAgent() {
-                    await fetch(`http://127.0.0.1:8715/api/agents/${this.selectedAgent}`, {
+                    await fetch(`/api/agents/${this.selectedAgent}`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({content: this.agentContent})
@@ -673,7 +682,7 @@
                     this.showToast('Agent role configuration saved successfully!');
                 },
                 async commitMemory() {
-                    const res = await fetch('http://127.0.0.1:8714/commit', { method: 'POST' });
+                    const res = await fetch('/commit', { method: 'POST' });
                     const text = await res.text();
                     this.showToast(text);
                 },
@@ -682,7 +691,7 @@
                         this.showToast('Please enter a goal for the swarm run.');
                         return;
                     }
-                    const res = await fetch('http://127.0.0.1:8715/api/runs', {
+                    const res = await fetch('/api/runs', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
@@ -705,7 +714,7 @@
                         this.showToast('Please enter a guidance note.');
                         return;
                     }
-                    const res = await fetch(`http://127.0.0.1:8715/api/runs/${runId}/decision`, {
+                    const res = await fetch(`/api/runs/${runId}/decision`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
@@ -728,6 +737,18 @@
                         this.loadRuns();
                     } else {
                         this.showToast('Failed to send guidance.');
+                    }
+                },
+                async clearAllRuns() {
+                    if (!confirm('Are you sure you want to clear all swarm runs and telemetry history?')) return;
+                    const res = await fetch('/api/runs/clear', { method: 'POST' });
+                    if (res.ok) {
+                        this.showToast('All runs cleared successfully!');
+                        this.runs = [];
+                        this.loadRuns();
+                        this.loadTelemetry();
+                    } else {
+                        this.showToast('Failed to clear runs.');
                     }
                 }
             },

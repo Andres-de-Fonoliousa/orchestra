@@ -21,7 +21,7 @@ MEMORY_FILES = ["IDENTITY.md"]
 KNOWLEDGE_FILES = ["notes.md"]
 PLUGINS = ["journal.ts", "voice-report.js", "tts.ps1", "notify.ps1"]
 GIT_IGNORE = [".gitignore"]
-SWARM_EXTRA = ["swarm.py"]
+SWARM_EXTRA = ["swarm.py", "api.py"]
 ROLES = ["orchestrator.md", "frontend.md", "backend.md", "ui.md", "theme.md", "seo.md", "db.md", "api.md", "tester.md"]
 SKILLS = ["web-stack.md", "python-bot.md", "deploy-safe.md", "security-scan.md"]
 
@@ -996,16 +996,27 @@ def render_run_detail(brain, run_id):
 
 def cmd_serve(port):
     brain = brain_dir()
-    handler = type("Handler", (DashboardHandler,), {"brain": brain})
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
+    ensure_index(brain)
+
+    api_script = brain / "api.py"
+    if not api_script.exists():
+        api_script = Path(__file__).resolve().parent / "api.py"
+    if not api_script.exists():
+        print("Error: api.py not found.")
+        return 1
+
     url = "http://127.0.0.1:" + str(port) + "/"
-    print("Orchestra dashboard: " + url + "  (Ctrl+C to stop)")
+    print("Orchestra enterprise dashboard: " + url + "  (Ctrl+C to stop)")
     if not os.environ.get("ORCHESTRA_NO_BROWSER"):
         webbrowser.open(url)
+
+    env = os.environ.copy()
+    env["PORT"] = str(port)
     try:
-        server.serve_forever()
+        subprocess.run([sys.executable, str(api_script)], env=env, cwd=str(api_script.parent))
     except KeyboardInterrupt:
         print("\nstopped.")
+    return 0
 
 
 def main():
