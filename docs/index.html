@@ -44,11 +44,11 @@
             <p class="text-lg text-slate-400 mb-16 max-w-xl mx-auto leading-relaxed font-light">
                 The Git-backed memory layer for AI development. Give your agents continuity, auditability, and production-grade orchestration.
             </p>
-            <div class="bg-slate-900/50 p-1 rounded-xl inline-flex items-center gap-4 border border-slate-800 shadow-xl">
-                <code id="install-cmd" class="font-mono text-blue-300 px-8 py-4 text-sm">
-                    powershell -ExecutionPolicy Bypass -File install.ps1
+            <div class="bg-slate-900/80 p-2 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 border border-slate-800 shadow-xl max-w-2xl mx-auto">
+                <code id="install-cmd" class="font-mono text-blue-300 px-4 py-3 text-xs sm:text-sm text-left break-all select-all">
+                    git clone https://github.com/Andres-de-Fonoliousa/orchestra.git && cd orchestra && powershell -ExecutionPolicy Bypass -File install.ps1
                 </code>
-                <button onclick="copyCmd()" class="bg-blue-600 text-white px-8 py-4 rounded-lg text-sm font-semibold hover:bg-blue-700 transition">Copy</button>
+                <button onclick="copyCmd()" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shrink-0">Copy</button>
             </div>
         </div>
     </header>
