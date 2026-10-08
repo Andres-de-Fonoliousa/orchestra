@@ -80,7 +80,7 @@ orchestra <command> [args]
 
 ## 📚 Documentation & Resources
 
-- **[Official Manual (v3.0.0)](https://docs-ebon-xi.vercel.app/manual.html)** — Comprehensive guide covering CLI, architecture, plugins, and troubleshooting.
+- **[Official Manual (v4.0.0)](https://andres-de-fonoliousa.github.io/agent_orchistration/manual.html)** — Comprehensive guide covering CLI, architecture, plugins, and troubleshooting.
 - **[Roadmap](docs/ROADMAP.md)** — Architectural evolution from v1 to v3 swarms.
 - **[Contributing Guide](CONTRIBUTING.md)** — Guidelines for building custom plugins and skills.
 

@@ -1,4 +1,4 @@
-# Orchestra Manual (v3.0.0)
+# Orchestra Manual (v4.0.0)
 
 Orchestra is your memory layer for opencode. New chats don't remember — Orchestra does.
 This manual covers everything: the daily loop, every command, the CLI, the dashboard, and fixes.
