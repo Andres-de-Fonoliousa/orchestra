@@ -15,7 +15,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-ORCHESTRA_VERSION = "3.0.0"
+ORCHESTRA_VERSION = "4.0.0"
 COMMANDS = ["handoff.md", "done.md", "remember.md"]
 MEMORY_FILES = ["IDENTITY.md"]
 KNOWLEDGE_FILES = ["notes.md"]

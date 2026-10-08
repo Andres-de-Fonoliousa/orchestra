@@ -155,16 +155,23 @@ def opencode_bin():
     return exe or "opencode"
 
 
-def opencode_run(args):
-    """Run the opencode CLI headless. Returns (returncode, stdout)."""
+def opencode_run(args, max_retries=3):
+    """Run the opencode CLI headless with robust auto-retry and exponential backoff. Returns (returncode, stdout)."""
     cmd = [opencode_bin(), "run"] + args
-    try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
-        return r.returncode, r.stdout
-    except FileNotFoundError:
-        return -1, "opencode CLI not found"
-    except subprocess.TimeoutExpired:
-        return -2, "timed out"
+    for attempt in range(1, max_retries + 1):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+            if r.returncode == 0:
+                return r.returncode, r.stdout
+            if attempt == max_retries:
+                return r.returncode, r.stdout
+        except FileNotFoundError:
+            return -1, "opencode CLI not found"
+        except subprocess.TimeoutExpired:
+            if attempt == max_retries:
+                return -2, "timed out"
+        time.sleep(2 * attempt)
+    return -1, "max retries exceeded"
 
 
 def _json_block(text):

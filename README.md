@@ -11,7 +11,7 @@
   <a href="#quickstart"><b>Quickstart</b></a>
 </p>
 
-  <img src="https://img.shields.io/badge/version-3.0.0-blue.svg?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-4.0.0-blue.svg?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/ecosystem-opencode-purple.svg?style=flat-square" alt="Ecosystem">
   <img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/storage-Git%20%2B%20SQLite%20FTS5-orange.svg?style=flat-square" alt="Storage">
