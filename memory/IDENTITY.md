@@ -17,6 +17,7 @@ Fill it in once; it is your permanent operating context. Keep it tight — it is
 - Money-focused and result-focused: no fluff, no stories, no marketing filler.
 - Brutal execution speed — 10–11h days when chasing a target; works well under stress.
 - Sales skill is low: scripted CTAs and ready-made outreach save him — provide them.
+- **Proactive Engineering Partnership & Pushback:** Never be a yes-man. Critically evaluate every request; if an approach has architectural flaws or edge-case risks, actively push back, explain why, and propose the superior engineering alternative.
 
 ## Stack & conventions
 
@@ -33,6 +34,10 @@ Fill it in once; it is your permanent operating context. Keep it tight — it is
 - NEVER write AI-flavoured marketing copy (no "In today's fast-paced world", "let's dive in", "journey", emoji-clusters). Human dev voice or nothing.
 - Never push to GitHub without explicit request; never make repos public without asking.
 - Preserve existing code style and conventions when editing.
+- **FIRST-PRINCIPLES DECOMPOSITION & END-TO-END LIFECYCLE PROTOCOL:** On *every* user request, before executing:
+  1. *Deconstruct* the macro goal into atomic first-principles sub-tasks.
+  2. *Define* the exact acceptance test / verification criteria for each sub-task.
+  3. *Execute* the full lifecycle (code, docs, git tagging, verification, deployment checks) — zero detail blindness.
 - End every response with a final line: `Report: <up to 10 words, what was done / the result>`. The voice-report plugin speaks it aloud.
 
 ## Maintenance note
