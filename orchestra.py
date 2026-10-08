@@ -267,6 +267,21 @@ def cmd_doctor():
     return 0 if ok else 1
 
 
+def cmd_shortcut():
+    desktop = Path.home() / "Desktop"
+    if not desktop.exists():
+        print("Desktop not found.")
+        return 1
+    shortcut_path = desktop / "Orchestra Dashboard.url"
+    dashboard_path = Path(__file__).resolve().parent / "dashboard" / "index.html"
+    content = f"""[InternetShortcut]
+URL=file:///{dashboard_path.as_posix()}
+"""
+    shortcut_path.write_text(content, encoding="utf-8")
+    print(f"Created desktop app shortcut: {shortcut_path}")
+    return 0
+
+
 def cmd_status():
     brain = brain_dir()
     for path in sorted(brain.rglob("*")):
@@ -1041,6 +1056,7 @@ def main():
     serve.add_argument("port", nargs="?", type=int, default=8714)
     serve.add_argument("--no-browser", action="store_true")
     sub.add_parser("upgrade", help="backup, migrate, verify, report").add_argument("source", nargs="?", help="repo directory to pull new files from (default: this script's folder)")
+    sub.add_parser("shortcut", help="create a desktop app launcher shortcut for the dashboard")
 
     swarm = sub.add_parser("run", help="start a swarm run: hierarchical agents + relentless tester")
     swarm.add_argument("goal", nargs="*", help="what to build")
@@ -1079,6 +1095,8 @@ def main():
         cmd_serve(args.port)
     elif cmd == "upgrade":
         sys.exit(cmd_upgrade(args.source))
+    elif cmd == "shortcut":
+        sys.exit(cmd_shortcut())
     elif cmd == "run":
         sys.exit(swarm_main(["run"] + list(args.goal) + (["--guided"] if args.guided else []) + ["--depth", str(args.depth)]))
     elif cmd == "resume":
